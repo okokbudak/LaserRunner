@@ -3,642 +3,678 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LaserRunner OS | Mainsail Diode Laser Edition</title>
+    <title>Mainsail | LaserRunner OS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div class="mainsail-layout">
+<body class="theme-mainsail-dark">
+    <div class="mainsail-app">
         
         <!-- ======================================================== -->
-        <!-- SOL MENÜ: MAINSAIL NAVIGATION SIDEBAR                    -->
+        <!-- 1. SOL MAINSAIL SIDEBAR (Orijinal Mainsail Menü Ağacı)   -->
         <!-- ======================================================== -->
-        <aside class="mainsail-sidebar">
-            <div class="sidebar-brand">
-                <div class="brand-laser-symbol">
-                    <span class="laser-ring"></span>
-                    <span class="laser-dot"></span>
-                </div>
-                <div class="brand-info">
-                    <h2>LaserRunner<span>OS</span></h2>
-                    <span class="brand-sub">BTT Octopus Pro • F446</span>
-                </div>
+        <aside class="ms-sidebar" id="mainSidebar">
+            <!-- Mainsail Logo & Brand -->
+            <div class="ms-sidebar-logo">
+                <svg class="ms-logo-icon" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L2 22H7L12 12L17 22H22L12 2Z" fill="#ff3344"/>
+                    <path d="M12 7L7.5 17H16.5L12 7Z" fill="#e53935" opacity="0.85"/>
+                </svg>
+                <span class="ms-logo-text">mainsail</span>
             </div>
 
-            <nav class="sidebar-nav">
-                <button class="nav-btn active" data-view="view-dashboard">
+            <!-- Menü Butonları -->
+            <nav class="ms-nav-list">
+                <button class="ms-nav-item active" data-view="view-dashboard" title="Dashboard">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-                        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-                        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-                        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                        <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                        <line x1="9" y1="21" x2="9" y2="9"></line>
                     </svg>
-                    <span>Gösterge Paneli</span>
+                    <span>DASHBOARD</span>
                 </button>
 
-                <button class="nav-btn" data-view="view-control">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <line x1="12" y1="3" x2="12" y2="7"></line>
-                        <line x1="12" y1="17" x2="12" y2="21"></line>
-                        <line x1="3" y1="12" x2="7" y2="12"></line>
-                        <line x1="17" y1="12" x2="21" y2="12"></line>
-                    </svg>
-                    <span>Kontrol & Motorlar</span>
-                </button>
-
-                <button class="nav-btn" data-view="view-files">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                    </svg>
-                    <span>İşler & Katmanlar</span>
-                </button>
-
-                <button class="nav-btn" data-view="view-config">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="16 18 22 12 16 6"></polyline>
-                        <polyline points="8 6 2 12 8 18"></polyline>
-                        <line x1="12" y1="2" x2="12" y2="6"></line>
-                        <line x1="12" y1="18" x2="12" y2="22"></line>
-                    </svg>
-                    <span>Yapılandırma</span>
-                </button>
-
-                <button class="nav-btn" data-view="view-console">
+                <button class="ms-nav-item" data-view="view-console" title="Console">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="4 17 10 11 4 5"></polyline>
                         <line x1="12" y1="19" x2="20" y2="19"></line>
                     </svg>
-                    <span>Konsol & Terminal</span>
+                    <span>CONSOLE</span>
+                </button>
+
+                <button class="ms-nav-item" data-view="view-files" title="G-Code Files">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <span>G-CODE FILES</span>
+                </button>
+
+                <button class="ms-nav-item" data-view="view-viewer" title="G-Code Viewer / Lazer Masası">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                    <span>G-CODE VIEWER</span>
+                </button>
+
+                <button class="ms-nav-item" data-view="view-history" title="History">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>HISTORY</span>
+                </button>
+
+                <button class="ms-nav-item" data-view="view-machine" title="Machine / laserrunner.cfg">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                    </svg>
+                    <span>MACHINE</span>
                 </button>
             </nav>
 
-            <div class="sidebar-footer">
-                <div class="host-info-card">
-                    <div class="host-badge">
-                        <span class="dot-online"></span>
-                        <span>Raspberry Pi 4B</span>
-                    </div>
-                    <span class="host-uptime">12 Mbps USB-CDC</span>
-                </div>
+            <div class="ms-sidebar-bottom">
+                <button class="ms-icon-btn ms-help-btn" title="Yardım & Dokümantasyon">
+                    <span>?</span>
+                </button>
             </div>
         </aside>
 
         <!-- ======================================================== -->
-        <!-- SAĞ ANA ALAN: TOPBAR + VIEWS                             -->
+        <!-- 2. SAĞ ALAN: TOPBAR + MAIN VIEWPORT                      -->
         <!-- ======================================================== -->
-        <div class="mainsail-main">
+        <div class="ms-main-wrapper">
             
-            <!-- ÜST STATUS VE KONTROL HEADER'I -->
-            <header class="mainsail-topbar">
-                <div class="topbar-left">
-                    <!-- Makine Durum Pill -->
-                    <div class="mainsail-status-pill offline" id="machineStatusPill">
-                        <span class="status-indicator"></span>
-                        <span class="status-name" id="statusText">ÇEVRİMDIŞI</span>
-                    </div>
-
-                    <!-- Canlı Pozisyon Rozetleri -->
-                    <div class="topbar-coords">
-                        <div class="coord-badge"><span class="axis">X</span><span id="hdrPosX" class="val">0.00</span></div>
-                        <div class="coord-badge"><span class="axis">Y</span><span id="hdrPosY" class="val">0.00</span></div>
-                        <div class="coord-badge"><span class="axis">Z</span><span id="hdrPosZ" class="val">0.00</span></div>
-                    </div>
-                </div>
-
-                <!-- Ortadaki Sensör & Güvenlik Göstergeleri -->
-                <div class="topbar-sensors">
-                    <div class="sensor-pill" id="pillTemp" title="Lazer Diyot Sıcaklığı">
-                        <span class="sensor-icon">🌡️</span>
-                        <span id="hdrTemp" class="sensor-val">25.0°C</span>
-                    </div>
-                    <div class="sensor-pill" id="pillLid" title="Kabin Kapağı">
-                        <span class="sensor-icon" id="iconLid">🔒</span>
-                        <span id="hdrLid" class="sensor-val">KAPALI</span>
-                    </div>
-                    <div class="sensor-pill danger-pill" id="pillFlame" style="display:none;" title="Alev Dedektörü!">
-                        <span class="sensor-icon">🔥</span>
-                        <span class="sensor-val">ALEV!</span>
-                    </div>
-                    <div class="sensor-pill" id="pillAir" title="Hava Desteği (Air Assist)">
-                        <span class="sensor-icon">💨</span>
-                        <span id="hdrAir" class="sensor-val">HAVA: KAPALI</span>
-                    </div>
-                </div>
-
-                <!-- Sağdaki Bağlantı ve Acil Durdurma -->
-                <div class="topbar-right">
-                    <div class="connection-group">
-                        <select id="portSelect" class="mainsail-select">
-                            <option value="">Port Taranıyor...</option>
-                        </select>
-                        <button id="btnRefreshPorts" class="mainsail-btn-icon" title="Portları Tara">🔄</button>
-                        <button id="btnConnect" class="mainsail-btn primary">Bağlan</button>
-                    </div>
-
-                    <button id="btnEstop" class="mainsail-btn-estop" title="Acil Durdurma (Emergency Stop)">
-                        <span class="estop-icon">🛑</span>
-                        <span>STOP</span>
+            <!-- MAINSAIL TOPBAR -->
+            <header class="ms-topbar">
+                <div class="ms-topbar-left">
+                    <button class="ms-hamburger-btn" id="btnToggleSidebar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
                     </button>
+                    <div class="ms-printer-badge">
+                        <span class="ms-status-dot" id="msStatusDot"></span>
+                        <span class="ms-printer-name">LaserRunner</span>
+                        <span class="ms-printer-state" id="msPrinterState">Ready</span>
+                    </div>
+
+                    <!-- Port Seçici (Otomatik Algılama) -->
+                    <div class="ms-port-select-box">
+                        <select id="portSelect" class="ms-select-input">
+                            <option value="">Port Aranıyor...</option>
+                        </select>
+                        <button id="btnRefreshPorts" class="ms-icon-btn-micro" title="Portları Yenile">🔄</button>
+                        <button id="btnConnect" class="ms-btn-connect">Bağlan</button>
+                    </div>
+                </div>
+
+                <div class="ms-topbar-right">
+                    <!-- UPLOAD & PRINT Butonu (Orijinal Mainsail Mavi Buton) -->
+                    <label class="ms-btn ms-btn-primary ms-btn-upload">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span>UPLOAD & PRINT</span>
+                        <input type="file" id="topUploadFile" accept=".svg,.dxf,.png,.jpg,.gcode,.gc" style="display:none">
+                    </label>
+
+                    <!-- EMERGENCY STOP (Orijinal Mainsail Kırmızı Buton) -->
+                    <button class="ms-btn-estop" id="btnEstop">
+                        <span class="estop-excl">(!)</span>
+                        <span>EMERGENCY STOP</span>
+                    </button>
+
+                    <!-- Sağ İkon Butonları (Bildirim, Ayarlar, Güç) -->
+                    <div class="ms-topbar-actions">
+                        <div class="ms-notif-wrapper">
+                            <button class="ms-icon-btn" title="Bildirimler">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                </svg>
+                            </button>
+                            <span class="ms-badge-counter">1</span>
+                        </div>
+                        <button class="ms-icon-btn" title="Arayüz Ayarları">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                        </button>
+                        <button class="ms-icon-btn" id="btnRestartHost" title="Host Servisini Yeniden Başlat">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                                <line x1="12" y1="2" x2="12" y2="12"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            <!-- GÖRÜNÜM İÇERİKLERİ (TAB VIEWS) -->
-            <main class="mainsail-content">
-                
-                <!-- ======================================================== -->
-                <!-- GÖRÜNÜM 1: DASHBOARD (ANA GÖSTERGE VE LAZER YATAĞI)      -->
-                <!-- ======================================================== -->
-                <section class="mainsail-view active" id="view-dashboard">
-                    <div class="dashboard-grid">
-                        
-                        <!-- SOL BÜYÜK KOLON: LAZER ÇALIŞMA ALANI & KANVAS -->
-                        <div class="dash-col-canvas">
-                            <div class="mainsail-card canvas-card">
-                                <div class="card-header">
-                                    <div class="card-title">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                            <line x1="3" y1="9" x2="21" y2="9"></line>
-                                            <line x1="9" y1="21" x2="9" y2="9"></line>
-                                        </svg>
-                                        <span>Lazer Masası (400 × 400 mm)</span>
+            <!-- ======================================================== -->
+            <!-- 3. ANA İÇERİK ALANI & VIEWS                              -->
+            <!-- ======================================================== -->
+            <main class="ms-content-viewport">
+
+                <!-- ==================================================== -->
+                <!-- GÖRÜNÜM 1: DASHBOARD (ORİJİNAL 3 KOLONLU MAINSAIL)   -->
+                <!-- ==================================================== -->
+                <section class="ms-view active" id="view-dashboard">
+                    <div class="ms-dashboard-columns">
+
+                        <!-- KOLON 1 (SOL): STATUS / TOOLHEAD / LASER CONTROL -->
+                        <div class="ms-col ms-col-left">
+
+                            <!-- 1.1 STATUS / DOSYA KARTI -->
+                            <div class="ms-panel">
+                                <div class="ms-panel-header">
+                                    <div class="ms-panel-title">
+                                        <span class="ms-panel-icon">ℹ️</span>
+                                        <span id="jobStateTitle">Ready</span>
                                     </div>
-                                    <div class="card-actions">
-                                        <button class="btn-tool active" id="toolSelect" title="Seç ve Taşı">↖</button>
-                                        <button class="btn-tool" id="toolOrigin" title="Sıfır Noktası Belirle (G92 X0 Y0)">🎯</button>
-                                        <button class="btn-tool" id="btnZoomIn" title="Yakınlaştır">+</button>
-                                        <button class="btn-tool" id="btnZoomOut" title="Uzaklaştır">-</button>
-                                        <button class="btn-tool" id="btnResetView" title="Görünümü Sıfırla">⟲</button>
-                                        <button class="btn-tool" id="btnClearCanvas" title="Çalışma Alanını Temizle">🗑️</button>
+                                    <div class="ms-panel-tools">
+                                        <span class="ms-chevron">⌄</span>
                                     </div>
                                 </div>
-                                
-                                <div class="canvas-container" id="canvasContainer">
-                                    <canvas id="laserCanvas" width="800" height="800"></canvas>
-                                    <div class="canvas-overlay-coords">
-                                        X: <span id="mouseCoordX">0.0</span> mm | Y: <span id="mouseCoordY">0.0</span> mm
+                                <div class="ms-panel-tabs">
+                                    <button class="ms-tab active">FILES</button>
+                                    <button class="ms-tab">JOB QUEUE (0)</button>
+                                </div>
+                                <div class="ms-status-content">
+                                    <div class="ms-file-row">
+                                        <span class="ms-file-name" id="currentFileName">Dosya seçilmedi</span>
+                                        <span class="ms-file-progress" id="currentFilePct">%0</span>
+                                    </div>
+                                    <div class="ms-progress-track">
+                                        <div class="ms-progress-bar" id="mainProgressBar" style="width: 0%;"></div>
+                                    </div>
+                                    <div class="ms-job-actions">
+                                        <button class="ms-btn ms-btn-primary ms-btn-xs" id="btnStartJob">Başlat</button>
+                                        <button class="ms-btn ms-btn-xs" id="btnPauseJob">Duraklat</button>
+                                        <button class="ms-btn ms-btn-danger ms-btn-xs" id="btnCancelJob">İptal</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 1.2 TOOLHEAD KARTI (Mainsail Jog Barları) -->
+                            <div class="ms-panel">
+                                <div class="ms-panel-header">
+                                    <div class="ms-panel-title">
+                                        <span class="ms-panel-icon">❖</span>
+                                        <span>Toolhead</span>
+                                    </div>
+                                    <div class="ms-panel-tools">
+                                        <button class="ms-icon-btn-micro">⋮</button>
+                                        <span class="ms-chevron">⌄</span>
                                     </div>
                                 </div>
 
-                                <div class="canvas-footer-bar">
-                                    <div class="framing-group">
-                                        <button class="mainsail-btn" id="btnFrameJob">🔲 Kutu Çerçevele</button>
-                                        <button class="mainsail-btn" id="btnFrameRubber">⭕ Sıkı Çerçevele</button>
-                                        <button class="mainsail-btn danger" id="btnRunJob">▶ İŞİ BAŞLAT</button>
-                                        <button class="mainsail-btn warning" id="btnPauseJob">⏸ Duraklat</button>
+                                <div class="ms-toolhead-content">
+                                    <div class="ms-pos-header">
+                                        <span class="ms-pos-sub">Position: absolute</span>
                                     </div>
-                                    <div class="job-progress-wrapper">
-                                        <div class="progress-info">
-                                            <span id="jobFileName">İş Hazır Değil</span>
-                                            <span id="jobPercentText">%0</span>
+
+                                    <!-- Koordinat Kutuları -->
+                                    <div class="ms-coords-row">
+                                        <div class="ms-coord-box">
+                                            <span class="ms-coord-sub">[0.00]</span>
+                                            <div class="ms-coord-val"><span>X</span> <strong id="valPosX">0.00</strong></div>
                                         </div>
-                                        <div class="progress-bar-bg">
-                                            <div class="progress-bar-fill" id="jobProgressBar" style="width: 0%;"></div>
+                                        <div class="ms-coord-box">
+                                            <span class="ms-coord-sub">[0.00]</span>
+                                            <div class="ms-coord-val"><span>Y</span> <strong id="valPosY">0.00</strong></div>
+                                        </div>
+                                        <div class="ms-coord-box highlight-z">
+                                            <span class="ms-coord-sub">[0.00]</span>
+                                            <div class="ms-coord-val"><span class="warn-tri">▲</span> <span>Z</span> <strong id="valPosZ">0.000</strong></div>
                                         </div>
                                     </div>
+
+                                    <!-- Homing Butonları (Orijinal Mainsail Mavi Butonlar) -->
+                                    <div class="ms-home-row">
+                                        <button class="ms-btn-home ms-btn-home-all" id="btnHomeAll">
+                                            <span class="home-icon">🏠</span> ALL
+                                        </button>
+                                        <button class="ms-btn-home ms-btn-home-xy" id="btnHomeXY">
+                                            <span>XY</span>
+                                        </button>
+                                        <button class="ms-btn-home ms-btn-home-z" id="btnHomeZ">
+                                            <span>Z</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- JOG BARS (X, Y, Z Orijinal Mainsail Lineer Düzeni) -->
+                                    <div class="ms-jog-bars">
+                                        <!-- X Satırı -->
+                                        <div class="ms-jog-row">
+                                            <button class="ms-jog-btn" data-axis="x" data-dist="-100">-100</button>
+                                            <button class="ms-jog-btn" data-axis="x" data-dist="-10">-10</button>
+                                            <button class="ms-jog-btn" data-axis="x" data-dist="-1">-1</button>
+                                            <div class="ms-jog-axis-badge axis-x">X</div>
+                                            <button class="ms-jog-btn" data-axis="x" data-dist="1">+1</button>
+                                            <button class="ms-jog-btn" data-axis="x" data-dist="10">+10</button>
+                                            <button class="ms-jog-btn" data-axis="x" data-dist="100">+100</button>
+                                        </div>
+
+                                        <!-- Y Satırı -->
+                                        <div class="ms-jog-row">
+                                            <button class="ms-jog-btn" data-axis="y" data-dist="-100">-100</button>
+                                            <button class="ms-jog-btn" data-axis="y" data-dist="-10">-10</button>
+                                            <button class="ms-jog-btn" data-axis="y" data-dist="-1">-1</button>
+                                            <div class="ms-jog-axis-badge axis-y">Y</div>
+                                            <button class="ms-jog-btn" data-axis="y" data-dist="1">+1</button>
+                                            <button class="ms-jog-btn" data-axis="y" data-dist="10">+10</button>
+                                            <button class="ms-jog-btn" data-axis="y" data-dist="100">+100</button>
+                                        </div>
+
+                                        <!-- Z Satırı -->
+                                        <div class="ms-jog-row">
+                                            <button class="ms-jog-btn" data-axis="z" data-dist="-25">-25</button>
+                                            <button class="ms-jog-btn" data-axis="z" data-dist="-1">-1</button>
+                                            <button class="ms-jog-btn" data-axis="z" data-dist="-0.1">-0.1</button>
+                                            <div class="ms-jog-axis-badge axis-z">Z</div>
+                                            <button class="ms-jog-btn" data-axis="z" data-dist="0.1">+0.1</button>
+                                            <button class="ms-jog-btn" data-axis="z" data-dist="1">+1</button>
+                                            <button class="ms-jog-btn" data-axis="z" data-dist="25">+25</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Z-Offset & Speed Factor -->
+                                    <div class="ms-zoffset-row">
+                                        <span class="ms-slider-label">Speed factor</span>
+                                        <div class="ms-slider-row">
+                                            <button class="ms-step-btn" id="btnSpeedMinus">-</button>
+                                            <input type="range" id="sliderSpeedFactor" min="10" max="250" value="100">
+                                            <button class="ms-step-btn" id="btnSpeedPlus">+</button>
+                                            <span class="ms-factor-val" id="valSpeedFactor">100 %</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 1.3 LAZER & ÇEVRE DONANIMLARI KARTI (Mainsail Extruder Karşılığı) -->
+                            <div class="ms-panel">
+                                <div class="ms-panel-header">
+                                    <div class="ms-panel-title">
+                                        <span class="ms-panel-icon">⚡</span>
+                                        <span>Laser & Peripherals</span>
+                                    </div>
+                                    <div class="ms-panel-tools">
+                                        <span class="ms-chevron">⌄</span>
+                                    </div>
+                                </div>
+
+                                <div class="ms-laser-panel-content">
+                                    <!-- Lazer Güç Çarpanı -->
+                                    <div class="ms-slider-group">
+                                        <span class="ms-slider-label">Laser Power factor</span>
+                                        <div class="ms-slider-row">
+                                            <button class="ms-step-btn" id="btnPowerMinus">-</button>
+                                            <input type="range" id="sliderLaserFactor" min="0" max="100" value="100">
+                                            <button class="ms-step-btn" id="btnPowerPlus">+</button>
+                                            <span class="ms-factor-val" id="valLaserFactor">100 %</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Test Ateşi & Odaklama -->
+                                    <div class="ms-test-fire-box">
+                                        <span class="ms-sublabel">Test Ateşi (Odak):</span>
+                                        <div class="ms-btn-group">
+                                            <button class="ms-btn ms-btn-xs" id="btnLaserOff">Kapat (0%)</button>
+                                            <button class="ms-btn ms-btn-xs ms-btn-primary" id="btnLaserLow">1% Işık</button>
+                                            <button class="ms-btn ms-btn-xs" id="btnLaserMed">5% Işık</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Donanım Düğmeleri -->
+                                    <div class="ms-toggles-grid">
+                                        <button class="ms-toggle-btn" id="btnToggleAir">
+                                            <span class="toggle-dot"></span> Hava (Air Assist)
+                                        </button>
+                                        <button class="ms-toggle-btn" id="btnToggleRedPointer">
+                                            <span class="toggle-dot"></span> 3.3V Kırmızı Nokta
+                                        </button>
+                                        <button class="ms-toggle-btn" id="btnToggleExhaust">
+                                            <span class="toggle-dot"></span> Duman Fanı (FAN1)
+                                        </button>
+                                        <button class="ms-toggle-btn active" id="btnToggleMotors">
+                                            <span class="toggle-dot"></span> Motor Kilidi
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- KOLON 2 (ORTA): TEMPERATURES GRAFİĞİ & MACHINE AYARLARI -->
+                        <div class="ms-col ms-col-center">
+
+                            <!-- 2.1 TEMPERATURES KARTI (Canlı Tablo + Line Graph) -->
+                            <div class="ms-panel">
+                                <div class="ms-panel-header">
+                                    <div class="ms-panel-title">
+                                        <span class="ms-panel-icon">🌡️</span>
+                                        <span>Temperatures</span>
+                                    </div>
+                                    <div class="ms-panel-tools">
+                                        <button class="ms-text-link" id="btnCooldown">❄ COOLDOWN</button>
+                                        <button class="ms-icon-btn-micro">⚙</button>
+                                        <span class="ms-chevron">⌄</span>
+                                    </div>
+                                </div>
+
+                                <div class="ms-temp-content">
+                                    <table class="ms-temp-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>State</th>
+                                                <th>Current</th>
+                                                <th>Target</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><span class="temp-icon diode-icon">🔥</span> Laser Diode</td>
+                                                <td><span id="tempStateDiode" class="state-dim">off</span></td>
+                                                <td><strong id="valTempDiode">25.0 °C</strong></td>
+                                                <td><span>0 °C</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="temp-icon mcu-icon">💻</span> MCU STM32F446</td>
+                                                <td><span class="state-ok">ok</span></td>
+                                                <td><strong id="valTempMcu">32.4 °C</strong></td>
+                                                <td><span>-</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <!-- Canlı Sıcaklık Grafiği (Canvas) -->
+                                    <div class="ms-chart-container">
+                                        <canvas id="tempChartCanvas" width="600" height="200"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2.2 MACHINE AYARLARI KARTI (Velocity, Accel, SCV) -->
+                            <div class="ms-panel">
+                                <div class="ms-panel-header">
+                                    <div class="ms-panel-title">
+                                        <span class="ms-panel-icon">🖨️</span>
+                                        <span>Machine</span>
+                                    </div>
+                                    <div class="ms-panel-tools">
+                                        <span class="ms-chevron">⌄</span>
+                                    </div>
+                                </div>
+
+                                <div class="ms-machine-limits-grid">
+                                    <div class="ms-limit-field">
+                                        <span class="ms-limit-label">Velocity</span>
+                                        <div class="ms-limit-input-wrap">
+                                            <input type="number" id="inpVelocity" value="300">
+                                            <span class="ms-limit-unit">mm/s</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="ms-limit-field">
+                                        <span class="ms-limit-label">Square Corner Velocity</span>
+                                        <div class="ms-limit-input-wrap">
+                                            <input type="number" id="inpSCV" value="5">
+                                            <span class="ms-limit-unit">mm/s</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="ms-limit-field">
+                                        <span class="ms-limit-label">Acceleration</span>
+                                        <div class="ms-limit-input-wrap">
+                                            <input type="number" id="inpAccel" value="3000">
+                                            <span class="ms-limit-unit">mm/s²</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="ms-limit-field">
+                                        <span class="ms-limit-label">Max Accel. to Decel.</span>
+                                        <div class="ms-limit-input-wrap">
+                                            <input type="number" id="inpDecel" value="1500">
+                                            <span class="ms-limit-unit">mm/s²</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="ms-panel-footer">
+                                    <button class="ms-btn ms-btn-primary ms-btn-sm" id="btnApplyMachineLimits">Ayarları Uygula</button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- KOLON 3 (SAĞ): CONSOLE KARTI (Mainsail Terminali) -->
+                        <div class="ms-col ms-col-right">
+                            <div class="ms-panel ms-panel-console">
+                                <div class="ms-panel-header">
+                                    <div class="ms-panel-title">
+                                        <span class="ms-panel-icon">&gt;_</span>
+                                        <span>Console</span>
+                                    </div>
+                                    <div class="ms-panel-tools">
+                                        <button class="ms-icon-btn-micro" id="btnClearConsole" title="Temizle">🗑️</button>
+                                        <button class="ms-icon-btn-micro" title="Yardım">?</button>
+                                        <button class="ms-icon-btn-micro" title="Filtrele">T</button>
+                                        <span class="ms-chevron">⌄</span>
+                                    </div>
+                                </div>
+
+                                <!-- G-Code Giriş Çubuğu -->
+                                <form class="ms-console-input-bar" id="consoleForm">
+                                    <input type="text" id="consoleInput" placeholder="Send code..." autocomplete="off">
+                                    <button type="submit" class="ms-btn-send">➤</button>
+                                </form>
+
+                                <!-- Hızlı Makrolar Barı -->
+                                <div class="ms-console-macros">
+                                    <button class="ms-macro-chip" data-cmd="G28">G28</button>
+                                    <button class="ms-macro-chip" data-cmd="G28 X">G28 X</button>
+                                    <button class="ms-macro-chip" data-cmd="G28 Y">G28 Y</button>
+                                    <button class="ms-macro-chip" data-cmd="G28 Z">G28 Z</button>
+                                    <button class="ms-macro-chip" data-cmd="FIRMWARE_RESTART">FIRMWARE_RESTART</button>
+                                    <button class="ms-macro-chip" data-cmd="SET_AIR_ASSIST ACTIVE=1">HAVA AÇ</button>
+                                    <button class="ms-macro-chip" data-cmd="SET_AIR_ASSIST ACTIVE=0">HAVA KAPAT</button>
+                                </div>
+
+                                <!-- Terminal Günlük Akışı -->
+                                <div class="ms-console-log" id="consoleLog">
+                                    <div class="ms-log-row"><span class="log-time">01:47:20</span> <span class="log-info">Klipper state: Ready</span></div>
+                                    <div class="ms-log-row"><span class="log-time">01:47:14</span> <span class="log-cmd">FIRMWARE_RESTART</span></div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- SAĞ KOLON: KONTROL WIDGET'LARI -->
-                        <div class="dash-col-widgets">
-                            
-                            <!-- 1. HAREKET & JOG KARTI (MAINSAIL D-PAD) -->
-                            <div class="mainsail-card">
-                                <div class="card-header">
-                                    <div class="card-title">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="5 9 2 12 5 15"></polyline>
-                                            <polyline points="9 5 12 2 15 5"></polyline>
-                                            <polyline points="19 9 22 12 19 15"></polyline>
-                                            <polyline points="9 19 12 22 15 19"></polyline>
-                                            <line x1="2" y1="12" x2="22" y2="12"></line>
-                                            <line x1="12" y1="2" x2="12" y2="22"></line>
-                                        </svg>
-                                        <span>Eksen Kontrolü (Toolhead)</span>
-                                    </div>
-                                    <div class="card-actions">
-                                        <button class="btn-text-action" id="btnHomeAll" title="Tüm Eksenleri Sıfırla (G28)">🏠 Sıfırla (Tümü)</button>
-                                    </div>
-                                </div>
-
-                                <div class="jog-section">
-                                    <!-- Adım Boyutu Seçicileri -->
-                                    <div class="jog-step-selector">
-                                        <button class="step-chip" data-step="0.1">0.1</button>
-                                        <button class="step-chip" data-step="1">1</button>
-                                        <button class="step-chip active" data-step="10">10</button>
-                                        <button class="step-chip" data-step="50">50</button>
-                                        <button class="step-chip" data-step="100">100</button>
-                                        <span class="step-unit">mm</span>
-                                    </div>
-
-                                    <!-- D-PAD MATRİSİ -->
-                                    <div class="mainsail-dpad">
-                                        <button class="dpad-btn" id="jogDiagUL" title="-X +Y">↖</button>
-                                        <button class="dpad-btn dpad-main" id="jogYPlus" title="+Y">▲</button>
-                                        <button class="dpad-btn" id="jogDiagUR" title="+X +Y">↗</button>
-
-                                        <button class="dpad-btn dpad-main" id="jogXMinus" title="-X">◀</button>
-                                        <button class="dpad-btn dpad-home" id="btnHomeXY" title="Home X/Y">🏠</button>
-                                        <button class="dpad-btn dpad-main" id="jogXPlus" title="+X">▶</button>
-
-                                        <button class="dpad-btn" id="jogDiagDL" title="-X -Y">↙</button>
-                                        <button class="dpad-btn dpad-main" id="jogYMinus" title="-Y">▼</button>
-                                        <button class="dpad-btn" id="jogDiagDR" title="+X -Y">↘</button>
-                                    </div>
-
-                                    <!-- Z Eksen Kontrolü -->
-                                    <div class="z-jog-bar">
-                                        <span class="z-label">Z Eksen:</span>
-                                        <button class="mainsail-btn btn-sm" id="jogZUp">+Z</button>
-                                        <button class="mainsail-btn btn-sm" id="jogZDown">-Z</button>
-                                        <button class="mainsail-btn btn-sm" id="btnHomeZ">🏠 Z</button>
-                                    </div>
-
-                                    <!-- Jog Hız Kaydırıcısı -->
-                                    <div class="jog-speed-slider">
-                                        <div class="slider-header">
-                                            <span>Jog Hızı:</span>
-                                            <span id="jogSpeedVal">40 mm/s</span>
-                                        </div>
-                                        <input type="range" id="jogSpeedSlider" min="5" max="200" value="40" step="5">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- 2. LAZER VE ÇEVRESEL BİRİMLER (PERIPHERALS) -->
-                            <div class="mainsail-card">
-                                <div class="card-header">
-                                    <div class="card-title">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="5"></circle>
-                                            <line x1="12" y1="1" x2="12" y2="3"></line>
-                                            <line x1="12" y1="21" x2="12" y2="23"></line>
-                                        </svg>
-                                        <span>Lazer & Çevre Donanımları</span>
-                                    </div>
-                                </div>
-
-                                <div class="peripherals-grid">
-                                    <!-- Test Lazer Ateşleme (Odak) -->
-                                    <div class="peri-card highlight-peri">
-                                        <div class="peri-head">
-                                            <span>Test Ateşleme (Odak)</span>
-                                            <span id="laserTestPercent">0%</span>
-                                        </div>
-                                        <input type="range" id="manualLaserSlider" min="0" max="10" value="0" step="0.5">
-                                        <div class="peri-actions">
-                                            <button class="mainsail-btn btn-sm" id="btnLaserOff">Kapat</button>
-                                            <button class="mainsail-btn btn-sm" id="btnLaserLow">1% Test Işığı</button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Hızlı Donanım Anahtarları -->
-                                    <div class="peri-toggles-list">
-                                        <div class="peri-toggle-row">
-                                            <div class="toggle-info">
-                                                <span class="toggle-icon">💨</span>
-                                                <span>Hava Desteği (Air Assist)</span>
-                                            </div>
-                                            <button class="btn-toggle" id="btnToggleAir">KAPALI</button>
-                                        </div>
-
-                                        <div class="peri-toggle-row">
-                                            <div class="toggle-info">
-                                                <span class="toggle-icon">🔴</span>
-                                                <span>3.3V Kılavuz Nokta Lazer</span>
-                                            </div>
-                                            <button class="btn-toggle" id="btnToggleRedPointer">KAPALI</button>
-                                        </div>
-
-                                        <div class="peri-toggle-row">
-                                            <div class="toggle-info">
-                                                <span class="toggle-icon">🌪️</span>
-                                                <span>Duman Emiş Fanı (FAN1)</span>
-                                            </div>
-                                            <button class="btn-toggle" id="btnToggleExhaust">KAPALI</button>
-                                        </div>
-
-                                        <div class="peri-toggle-row">
-                                            <div class="toggle-info">
-                                                <span class="toggle-icon">🔓</span>
-                                                <span>Step Motor Kilidi</span>
-                                            </div>
-                                            <button class="btn-toggle active" id="btnToggleMotors">KİLİTLİ</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
                     </div>
                 </section>
 
-                <!-- ======================================================== -->
-                <!-- GÖRÜNÜM 2: DETAYLI KONTROL & TMC2209 DOĞRULAMA          -->
-                <!-- ======================================================== -->
-                <section class="mainsail-view" id="view-control">
-                    <div class="control-view-grid">
-                        
-                        <!-- SÜRÜCÜ YÖNETİMİ & STEPPER_BUZZ -->
-                        <div class="mainsail-card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
-                                        <rect x="9" y="9" width="6" height="6"></rect>
-                                        <line x1="9" y1="1" x2="9" y2="4"></line>
-                                        <line x1="15" y1="1" x2="15" y2="4"></line>
-                                        <line x1="9" y1="20" x2="9" y2="23"></line>
-                                        <line x1="15" y1="20" x2="15" y2="23"></line>
-                                    </svg>
-                                    <span>TMC2209 Step Sürücüler & Bağımsız Buzz Testleri</span>
-                                </div>
-                                <div class="card-actions">
-                                    <div class="buzz-dist-box">
-                                        <label>Test Mesafesi:</label>
-                                        <select id="buzzDistanceSelect" class="mainsail-select">
-                                            <option value="1.0">1 mm (9° Tık)</option>
-                                            <option value="5.0" selected>5 mm (45° Belirgin Dönüş)</option>
-                                            <option value="10.0">10 mm (90° Çeyrek Tur)</option>
-                                            <option value="20.0">20 mm (180° Yarım Tur)</option>
-                                        </select>
-                                    </div>
-                                </div>
+                <!-- ==================================================== -->
+                <!-- GÖRÜNÜM 2: CONSOLE (TAM EKRAN TERMINAL)              -->
+                <!-- ==================================================== -->
+                <section class="ms-view" id="view-console">
+                    <div class="ms-fullscreen-card">
+                        <div class="ms-panel-header">
+                            <div class="ms-panel-title">
+                                <span class="ms-panel-icon">&gt;_</span>
+                                <span>Tam Ekran G-Code Konsolu & Sistem Günlüğü</span>
                             </div>
-
-                            <div class="drivers-cards-container">
-                                <!-- Driver 0: X Ekseni -->
-                                <div class="driver-box">
-                                    <div class="driver-box-header">
-                                        <span class="driver-tag">DRIVER 0</span>
-                                        <span class="driver-name">Eksen X (PF13 / UART PC4)</span>
-                                        <button class="mainsail-btn btn-sm btn-buzz" data-stepper="stepper_x">🔊 X Test (Buzz)</button>
-                                    </div>
-                                    <div class="driver-props">
-                                        <div class="prop-item">
-                                            <span>Çalışma Akımı:</span>
-                                            <input type="number" id="tmcRunCurrentX" value="800" step="50"> mA
-                                        </div>
-                                        <div class="prop-item">
-                                            <span>Bekleme:</span>
-                                            <input type="number" id="tmcHoldCurrentX" value="400" step="50"> mA
-                                        </div>
-                                        <div class="prop-item">
-                                            <span>Mikro-adım:</span>
-                                            <input type="number" id="tmcMicrostepsX" value="16" step="2">
-                                        </div>
-                                        <div class="prop-item">
-                                            <span>Mod:</span>
-                                            <select id="tmcModeX">
-                                                <option value="0" selected>SpreadCycle</option>
-                                                <option value="1">StealthChop</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Driver 1: Y Ekseni -->
-                                <div class="driver-box">
-                                    <div class="driver-box-header">
-                                        <span class="driver-tag">DRIVER 1</span>
-                                        <span class="driver-name">Eksen Y (PG0 / UART PD11)</span>
-                                        <button class="mainsail-btn btn-sm btn-buzz" data-stepper="stepper_y">🔊 Y Test (Buzz)</button>
-                                    </div>
-                                    <div class="driver-props">
-                                        <div class="prop-item">
-                                            <span>Çalışma Akımı:</span>
-                                            <input type="number" id="tmcRunCurrentY" value="900" step="50"> mA
-                                        </div>
-                                        <div class="prop-item">
-                                            <span>Bekleme:</span>
-                                            <input type="number" id="tmcHoldCurrentY" value="450" step="50"> mA
-                                        </div>
-                                        <div class="prop-item">
-                                            <span>Mikro-adım:</span>
-                                            <input type="number" id="tmcMicrostepsY" value="16" step="2">
-                                        </div>
-                                        <div class="prop-item">
-                                            <span>Mod:</span>
-                                            <select id="tmcModeY">
-                                                <option value="0" selected>SpreadCycle</option>
-                                                <option value="1">StealthChop</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Driver 2: Y1 Ekseni (Dual-Y) -->
-                                <div class="driver-box">
-                                    <div class="driver-box-header">
-                                        <span class="driver-tag">DRIVER 2</span>
-                                        <span class="driver-name">Eksen Y1 Sağ (PF11 / UART PC6)</span>
-                                        <button class="mainsail-btn btn-sm btn-buzz" data-stepper="stepper_y1">🔊 Y1 Test (Buzz)</button>
-                                    </div>
-                                    <div class="driver-props">
-                                        <div class="prop-item">
-                                            <span>Çalışma Akımı:</span>
-                                            <input type="number" value="900" step="50"> mA
-                                        </div>
-                                        <div class="prop-item">
-                                            <span>Bekleme:</span>
-                                            <input type="number" value="450" step="50"> mA
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="card-footer-actions">
-                                <button class="mainsail-btn primary" id="btnApplyTmc">⚡ Ayarları Sürücülere Aktar</button>
-                                <button class="mainsail-btn" id="btnAutoSquareHome">📐 Dual-Y Otomatik Gönyeleme</button>
+                            <div class="ms-panel-tools">
+                                <button class="ms-btn ms-btn-sm" id="btnFsClearConsole">Temizle</button>
                             </div>
                         </div>
-
-                        <!-- GÜVENLİK SENSÖRLERİ & ENDSTOPS -->
-                        <div class="mainsail-card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                                    </svg>
-                                    <span>Güvenlik Sensörleri & Switch Durumları</span>
-                                </div>
-                            </div>
-                            <div class="safety-pins-grid">
-                                <div class="sensor-chip" id="sensorLid">
-                                    <span class="sensor-dot"></span>
-                                    <span class="sensor-name">Kabin Kapağı</span>
-                                    <span class="sensor-state">KAPALI</span>
-                                </div>
-                                <div class="sensor-chip" id="sensorFlame">
-                                    <span class="sensor-dot"></span>
-                                    <span class="sensor-name">Optik Alev Sensörü</span>
-                                    <span class="sensor-state">TEMİZ</span>
-                                </div>
-                                <div class="sensor-chip" id="sensorEstop">
-                                    <span class="sensor-dot"></span>
-                                    <span class="sensor-name">Acil Durdurma Butonu</span>
-                                    <span class="sensor-state">HAZIR</span>
-                                </div>
-                                <div class="sensor-chip" id="sensorWater">
-                                    <span class="sensor-dot"></span>
-                                    <span class="sensor-name">Hava Desteği Akışı</span>
-                                    <span class="sensor-state">NORMAL</span>
-                                </div>
-                            </div>
+                        <div class="ms-fs-console-log" id="fsConsoleLog">
+                            <!-- JS ile doldurulur -->
                         </div>
+                        <form class="ms-console-input-bar" id="fsConsoleForm">
+                            <input type="text" id="fsConsoleInput" placeholder="G-Code komutu girin (örn: G0 X50 Y50 F3000)..." autocomplete="off">
+                            <button type="submit" class="ms-btn-send">Gönder</button>
+                        </form>
                     </div>
                 </section>
 
-                <!-- ======================================================== -->
-                <!-- GÖRÜNÜM 3: DOSYALAR, KATMANLAR VE CAM YÖNETİMİ         -->
-                <!-- ======================================================== -->
-                <section class="mainsail-view" id="view-files">
-                    <div class="files-view-grid">
-                        <!-- DOSYA YÜKLEME KARTI -->
-                        <div class="mainsail-card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                        <polyline points="17 8 12 3 7 8"></polyline>
-                                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                                    </svg>
+                <!-- ==================================================== -->
+                <!-- GÖRÜNÜM 3: G-CODE FILES (İŞLER & LIGHTBURN KATMANLAR) -->
+                <!-- ==================================================== -->
+                <section class="ms-view" id="view-files">
+                    <div class="ms-files-layout">
+                        <!-- Dosya Yükleme Dropzone -->
+                        <div class="ms-panel">
+                            <div class="ms-panel-header">
+                                <div class="ms-panel-title">
+                                    <span class="ms-panel-icon">📁</span>
                                     <span>Dosya Yükle (SVG, DXF, PNG, JPG, G-Code)</span>
                                 </div>
                             </div>
-                            <div class="dropzone" id="fileDropzone">
-                                <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <div class="ms-dropzone" id="fileDropzone">
+                                <svg class="ms-drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                     <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
                                     <path d="M12 12v9"></path>
                                     <path d="m16 16-4-4-4 4"></path>
                                 </svg>
-                                <p>Dosyaları sürükleyip buraya bırakın veya <span class="highlight">Gözatın</span></p>
-                                <input type="file" id="fileInput" accept=".svg,.dxf,.png,.jpg,.jpeg,.gcode,.gc" style="display:none">
+                                <p>Dosyaları buraya sürükleyin veya <span class="ms-highlight">Gözatın</span></p>
+                                <input type="file" id="mainFileInput" accept=".svg,.dxf,.png,.jpg,.gcode,.gc" style="display:none">
                             </div>
                         </div>
 
-                        <!-- KATMANLAR TABLOSU (LIGHTBURN MANTIĞI) -->
-                        <div class="mainsail-card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                                        <polyline points="2 17 12 22 22 17"></polyline>
-                                        <polyline points="2 12 12 17 22 12"></polyline>
-                                    </svg>
+                        <!-- LightBurn Katman Parametreleri Tablosu -->
+                        <div class="ms-panel">
+                            <div class="ms-panel-header">
+                                <div class="ms-panel-title">
+                                    <span class="ms-panel-icon">🎨</span>
                                     <span>Lazer Katman Parametreleri (Hız, Güç, Pas)</span>
                                 </div>
                             </div>
-                            <div class="layers-table-container">
-                                <table class="mainsail-table" id="layersTable">
-                                    <thead>
-                                        <tr>
-                                            <th>Katman</th>
-                                            <th>İşlem Tipi</th>
-                                            <th>Hız (mm/s)</th>
-                                            <th>Lazer Gücü (%)</th>
-                                            <th>Pas Sayısı</th>
-                                            <th>Hava</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="layersTableBody">
-                                        <tr>
-                                            <td><span class="layer-dot" style="background:#00f0ff;"></span> C00</td>
-                                            <td>
-                                                <select class="table-select">
-                                                    <option selected>Vektör Çizim (Line)</option>
-                                                    <option>Vektör Kesim (Cut)</option>
-                                                    <option>Raster Kazıma (Fill)</option>
-                                                </select>
-                                            </td>
-                                            <td><input type="number" class="table-input" value="30"></td>
-                                            <td><input type="number" class="table-input" value="80"></td>
-                                            <td><input type="number" class="table-input" value="1"></td>
-                                            <td><input type="checkbox" checked></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <table class="ms-data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Katman</th>
+                                        <th>Mod</th>
+                                        <th>Hız (mm/s)</th>
+                                        <th>Güç (%)</th>
+                                        <th>Pas</th>
+                                        <th>Hava</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="layersTbody">
+                                    <tr>
+                                        <td><span class="layer-dot" style="background:#00c8ff;"></span> C00</td>
+                                        <td>
+                                            <select class="ms-table-select">
+                                                <option selected>Vektör Çizim (Line)</option>
+                                                <option>Vektör Kesim (Cut)</option>
+                                                <option>Raster Kazıma (Fill)</option>
+                                            </select>
+                                        </td>
+                                        <td><input type="number" class="ms-table-inp" value="40"></td>
+                                        <td><input type="number" class="ms-table-inp" value="80"></td>
+                                        <td><input type="number" class="ms-table-inp" value="1"></td>
+                                        <td><input type="checkbox" checked></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================================================== -->
+                <!-- GÖRÜNÜM 4: G-CODE VIEWER / LAZER MASASI              -->
+                <!-- ==================================================== -->
+                <section class="ms-view" id="view-viewer">
+                    <div class="ms-viewer-layout">
+                        <div class="ms-panel ms-viewer-panel">
+                            <div class="ms-panel-header">
+                                <div class="ms-panel-title">
+                                    <span class="ms-panel-icon">🧊</span>
+                                    <span>Lazer Masası (400 × 400 mm) & Canlı Önizleme</span>
+                                </div>
+                                <div class="ms-panel-tools">
+                                    <button class="ms-btn ms-btn-xs" id="btnZoomIn">+</button>
+                                    <button class="ms-btn ms-btn-xs" id="btnZoomOut">-</button>
+                                    <button class="ms-btn ms-btn-xs" id="btnResetView">Ortala</button>
+                                    <button class="ms-btn ms-btn-xs" id="btnClearCanvas">Temizle</button>
+                                </div>
+                            </div>
+
+                            <!-- Canvas -->
+                            <div class="ms-canvas-container" id="canvasContainer">
+                                <canvas id="laserCanvas" width="800" height="800"></canvas>
+                                <div class="ms-canvas-coords">
+                                    X: <span id="mouseCoordX">0.0</span> mm | Y: <span id="mouseCoordY">0.0</span> mm
+                                </div>
+                            </div>
+
+                            <!-- Çerçeveleme (Framing) Araç Çubuğu -->
+                            <div class="ms-viewer-footer">
+                                <div class="ms-framing-actions">
+                                    <button class="ms-btn ms-btn-primary ms-btn-sm" id="btnFrameJob">🔲 Kutu Çerçevele</button>
+                                    <button class="ms-btn ms-btn-sm" id="btnFrameRubber">⭕ Sıkı Kontur Çerçevele</button>
+                                    <button class="ms-btn ms-btn-sm" id="btnSetZero">🎯 Burayı Sıfır Yap (G92 X0 Y0)</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- ======================================================== -->
-                <!-- GÖRÜNÜM 4: KLIPPER TARZI laserrunner.cfg DÜZENLEYİCİ    -->
-                <!-- ======================================================== -->
-                <section class="mainsail-view" id="view-config">
-                    <div class="config-view-container">
-                        <div class="mainsail-card config-full-card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="16 18 22 12 16 6"></polyline>
-                                        <polyline points="8 6 2 12 8 18"></polyline>
-                                    </svg>
-                                    <span>laserrunner.cfg Yapılandırma Dosyası</span>
-                                    <span class="config-file-chip" id="configFilePath">config/laserrunner.cfg</span>
+                <!-- ==================================================== -->
+                <!-- GÖRÜNÜM 5: HISTORY                                   -->
+                <!-- ==================================================== -->
+                <section class="ms-view" id="view-history">
+                    <div class="ms-panel">
+                        <div class="ms-panel-header">
+                            <div class="ms-panel-title">
+                                <span class="ms-panel-icon">⏱️</span>
+                                <span>İşlem Geçmişi (Print History)</span>
+                            </div>
+                        </div>
+                        <div class="ms-empty-history">
+                            <p>Henüz tamamlanmış lazer işi bulunmuyor.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==================================================== -->
+                <!-- GÖRÜNÜM 6: MACHINE (laserrunner.cfg KLIPPER EDITÖRÜ)  -->
+                <!-- ==================================================== -->
+                <section class="ms-view" id="view-machine">
+                    <div class="ms-machine-layout">
+                        <div class="ms-panel ms-editor-panel">
+                            <div class="ms-panel-header">
+                                <div class="ms-panel-title">
+                                    <span class="ms-panel-icon">⚙️</span>
+                                    <span>laserrunner.cfg Yapılandırması</span>
+                                    <span class="ms-file-chip" id="configFilePath">config/laserrunner.cfg</span>
                                 </div>
-                                <div class="card-actions">
-                                    <button class="mainsail-btn btn-sm" id="btnReloadConfig">🔄 Yenile</button>
-                                    <button class="mainsail-btn btn-sm primary" id="btnSaveConfig">💾 Kaydet & Uygula</button>
-                                    <button class="mainsail-btn btn-sm danger" id="btnSaveRestartConfig">⚡ Kaydet & Yeniden Başlat</button>
+                                <div class="ms-panel-tools">
+                                    <button class="ms-btn ms-btn-sm" id="btnReloadConfig">🔄 Yenile</button>
+                                    <button class="ms-btn ms-btn-primary ms-btn-sm" id="btnSaveConfig">💾 Kaydet & Uygula</button>
+                                    <button class="ms-btn ms-btn-danger ms-btn-sm" id="btnSaveRestartConfig">⚡ Kaydet & Servisi Yeniden Başlat</button>
                                 </div>
                             </div>
 
-                            <div class="editor-pane">
+                            <!-- Monospace Textarea Düzenleyici -->
+                            <div class="ms-editor-body">
                                 <textarea id="configEditorTextarea" spellcheck="false" placeholder="laserrunner.cfg yükleniyor..."></textarea>
                             </div>
 
-                            <div class="editor-status-bar" id="configStatusBar">
-                                Hazır
+                            <div class="ms-editor-statusbar" id="configStatusBar">
+                                Dosya hazır
                             </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ======================================================== -->
-                <!-- GÖRÜNÜM 5: KONSOL & G-CODE TERMİNALİ                    -->
-                <!-- ======================================================== -->
-                <section class="mainsail-view" id="view-console">
-                    <div class="console-view-container">
-                        <div class="mainsail-card console-full-card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="4 17 10 11 4 5"></polyline>
-                                        <line x1="12" y1="19" x2="20" y2="19"></line>
-                                    </svg>
-                                    <span>G-Code Terminali & Sistem Günlüğü</span>
-                                </div>
-                                <div class="card-actions">
-                                    <button class="btn-text-action" id="btnClearConsole">Günlüğü Temizle</button>
-                                </div>
-                            </div>
-
-                            <!-- HIZLI MAKRO BUTONLARI -->
-                            <div class="macros-quick-bar">
-                                <button class="macro-pill" data-gcode="G28">G28 (Home)</button>
-                                <button class="macro-pill" data-gcode="M112">M112 (Acil Kapat)</button>
-                                <button class="macro-pill" data-gcode="M106 S255">Fan Tam Güç</button>
-                                <button class="macro-pill" data-gcode="M107">Fan Kapat</button>
-                                <button class="macro-pill" data-gcode="SET_AIR_ASSIST ACTIVE=1">Hava Aç</button>
-                                <button class="macro-pill" data-gcode="SET_AIR_ASSIST ACTIVE=0">Hava Kapat</button>
-                            </div>
-
-                            <div class="terminal-log-window" id="consoleLog">
-                                <div class="log-line info">[LaserRunner OS] Sistem hazır. BTT Octopus Pro bağlantısı aktif.</div>
-                            </div>
-
-                            <form class="terminal-input-bar" id="consoleForm">
-                                <span class="prompt-symbol">&gt;</span>
-                                <input type="text" id="consoleInput" placeholder="G-Code veya komut girin (örn: G0 X10 Y10 F1200, M112, G28)..." autocomplete="off">
-                                <button type="submit" class="mainsail-btn primary">Gönder</button>
-                            </form>
                         </div>
                     </div>
                 </section>
