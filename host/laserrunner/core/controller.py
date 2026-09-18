@@ -181,6 +181,9 @@ class LaserRunnerController:
         self.state = MachineState.DISCONNECTED
 
     def enable_motors(self, enable: Any = True):
+        if self.state == MachineState.ESTOP and enable:
+            self.is_aborting = False
+            self.state = MachineState.IDLE
         if isinstance(enable, bool):
             bitmask = 0x0F if enable else 0x00
         elif isinstance(enable, int):
@@ -194,6 +197,15 @@ class LaserRunnerController:
         self.is_aborting = True
         self.state = MachineState.ESTOP
         self.transport.send_emergency_stop()
+
+    def reset_estop(self):
+        self.is_aborting = False
+        if self.transport.is_connected:
+            self.state = MachineState.IDLE
+            self.enable_motors(True)
+        else:
+            self.state = MachineState.DISCONNECTED
+        print("[Controller] Acil durdurma sıfırlandı, makine IDLE durumuna geçti.")
 
     def set_manual_laser(self, power_percent: float):
         """Manuel ana lazer açma / kapama (Odaklama için)"""
@@ -250,8 +262,10 @@ class LaserRunnerController:
 
     def jog(self, dx: float, dy: float, dz: float = 0.0, speed_mm_s: float = 40.0):
         """Elle eksen hareketi (Jog)"""
+        if self.state == MachineState.ESTOP:
+            raise RuntimeError("Makine ACİL DURDURMA (ESTOP) durumunda! Önce FIRMWARE_RESTART veya ESTOP Sıfırla yapın.")
         if self.state not in (MachineState.IDLE, MachineState.PAUSED):
-            return
+            raise RuntimeError(f"Makine bu durumda hareket edemez: {self.state}")
 
         segments = self.planner.plan_move(
             dx=dx, dy=dy, dz=dz,

@@ -244,14 +244,19 @@ function setupToolheadControls() {
             else if (axis === "z") dz = dist;
 
             try {
-                await fetch("/api/jog", {
+                const res = await fetch("/api/jog", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ dx, dy, dz, speed: state.speed_mm_s })
                 });
-                addLog(`G0 ${axis.toUpperCase()}${dist > 0 ? "+" : ""}${dist}`, "log-cmd");
+                if (!res.ok) {
+                    const err = await res.json();
+                    addLog(err.detail || "Jog engellendi!", "log-error");
+                } else {
+                    addLog(`G0 ${axis.toUpperCase()}${dist > 0 ? "+" : ""}${dist}`, "log-cmd");
+                }
             } catch (e) {
-                addLog("Jog komutu iletilemedi!", "log-error");
+                addLog(`Jog hatası: ${e.message}`, "log-error");
             }
         });
     });
@@ -270,6 +275,48 @@ function setupToolheadControls() {
     document.getElementById("btnHomeZ")?.addEventListener("click", async () => {
         addLog("G28 Z", "log-cmd");
         await fetch("/api/home", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ axis_mask: 4 }) });
+    });
+
+    // Motor Hızlı Buzz Testi Butonları
+    document.getElementById("btnBuzzX")?.addEventListener("click", async () => {
+        addLog("STEPPER_BUZZ STEPPER=stepper_x (5mm)", "log-info");
+        try {
+            const res = await fetch("/api/verify/stepper_buzz", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ stepper: "stepper_x", distance: 5.0 })
+            });
+            const data = await res.json();
+            addLog(data.message || data.detail, res.ok ? "log-success" : "log-error");
+        } catch (e) {
+            addLog(`Buzz X hatası: ${e.message}`, "log-error");
+        }
+    });
+
+    document.getElementById("btnBuzzY")?.addEventListener("click", async () => {
+        addLog("STEPPER_BUZZ STEPPER=stepper_y (5mm)", "log-info");
+        try {
+            const res = await fetch("/api/verify/stepper_buzz", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ stepper: "stepper_y", distance: 5.0 })
+            });
+            const data = await res.json();
+            addLog(data.message || data.detail, res.ok ? "log-success" : "log-error");
+        } catch (e) {
+            addLog(`Buzz Y hatası: ${e.message}`, "log-error");
+        }
+    });
+
+    // ESTOP Sıfırlama
+    document.getElementById("btnClearEstop")?.addEventListener("click", async () => {
+        addLog("Acil Durdurma Sıfırlanıyor (Reset ESTOP)...", "log-info");
+        try {
+            await fetch("/api/estop/reset", { method: "POST" });
+            addLog("Klipper state: Ready (ESTOP Sıfırlandı, Motorlar Hazır)", "log-success");
+        } catch (e) {
+            addLog(`Sıfırlama hatası: ${e.message}`, "log-error");
+        }
     });
 
     // Speed Factor Slider
@@ -291,10 +338,16 @@ function setupToolheadControls() {
         });
     }
 
-    // Acil Durdurma (Emergency Stop)
+    // Acil Durdurma (Emergency Stop / Reset)
     btnEstop.addEventListener("click", async () => {
-        addLog("M112 (EMERGENCY STOP)", "log-error");
-        await fetch("/api/estop", { method: "POST" });
+        if (state.machineState === "ESTOP") {
+            addLog("Acil Durdurma Sıfırlanıyor...", "log-info");
+            await fetch("/api/estop/reset", { method: "POST" });
+            addLog("Klipper state: Ready (Acil durum temizlendi)", "log-success");
+        } else {
+            addLog("M112 (EMERGENCY STOP)", "log-error");
+            await fetch("/api/estop", { method: "POST" });
+        }
     });
 }
 
@@ -408,11 +461,35 @@ async function executeCommand(cmd) {
 
     if (ucmd === "G28") {
         await fetch("/api/home", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ axis_mask: 7 }) });
+    } else if (ucmd.startsWith("G28 X")) {
+        await fetch("/api/home", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ axis_mask: 1 }) });
+    } else if (ucmd.startsWith("G28 Y")) {
+        await fetch("/api/home", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ axis_mask: 2 }) });
+    } else if (ucmd.startsWith("G28 Z")) {
+        await fetch("/api/home", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ axis_mask: 4 }) });
     } else if (ucmd === "M112") {
         await fetch("/api/estop", { method: "POST" });
-    } else if (ucmd === "FIRMWARE_RESTART") {
-        await fetch("/api/config/restart", { method: "POST" });
-        addLog("Klipper state: Restarting...", "log-info");
+    } else if (ucmd === "FIRMWARE_RESTART" || ucmd === "RESTART" || ucmd === "M999" || ucmd.includes("SIFIRLA") || ucmd.includes("RESET")) {
+        await fetch("/api/estop/reset", { method: "POST" });
+        addLog("Klipper state: Ready (Acil durum temizlendi)", "log-success");
+    } else if (ucmd.includes("BUZZ X") || ucmd.includes("STEPPER_BUZZ STEPPER=STEPPER_X") || ucmd.includes("STEPPER_BUZZ STEPPER=X")) {
+        addLog("STEPPER_BUZZ STEPPER=stepper_x başlatılıyor...", "log-info");
+        try {
+            const res = await fetch("/api/verify/stepper_buzz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stepper: "stepper_x", distance: 5.0 }) });
+            const data = await res.json();
+            addLog(data.message || data.detail, res.ok ? "log-success" : "log-error");
+        } catch (e) {
+            addLog(`Hata: ${e.message}`, "log-error");
+        }
+    } else if (ucmd.includes("BUZZ Y") || ucmd.includes("STEPPER_BUZZ STEPPER=STEPPER_Y") || ucmd.includes("STEPPER_BUZZ STEPPER=Y")) {
+        addLog("STEPPER_BUZZ STEPPER=stepper_y başlatılıyor...", "log-info");
+        try {
+            const res = await fetch("/api/verify/stepper_buzz", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stepper: "stepper_y", distance: 5.0 }) });
+            const data = await res.json();
+            addLog(data.message || data.detail, res.ok ? "log-success" : "log-error");
+        } catch (e) {
+            addLog(`Hata: ${e.message}`, "log-error");
+        }
     } else if (ucmd.includes("SET_AIR_ASSIST ACTIVE=1")) {
         await fetch("/api/aux/air_assist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ active: true }) });
     } else if (ucmd.includes("SET_AIR_ASSIST ACTIVE=0")) {

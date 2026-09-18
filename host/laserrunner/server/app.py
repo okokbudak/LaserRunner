@@ -151,11 +151,16 @@ def disconnect_device():
 
 @app.post("/api/jog")
 def jog_machine(req: JogRequest):
-    controller.jog(dx=req.dx, dy=req.dy, dz=req.dz, speed_mm_s=req.speed)
-    return {"status": "ok"}
+    try:
+        controller.jog(dx=req.dx, dy=req.dy, dz=req.dz, speed_mm_s=req.speed)
+        return {"status": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/home")
 def home_machine(req: HomingRequest):
+    if controller.state == MachineState.ESTOP:
+        raise HTTPException(status_code=400, detail="Makine ESTOP durumunda!")
     controller.start_homing(req.axis_mask)
     return {"status": "homing_started"}
 
@@ -183,6 +188,12 @@ def toggle_red_pointer(req: AuxToggleRequest):
 def emergency_stop():
     controller.emergency_stop()
     return {"status": "estop_triggered"}
+
+@app.post("/api/estop/reset")
+@app.post("/api/estop/clear")
+def reset_emergency_stop():
+    controller.reset_estop()
+    return {"status": "ok", "state": controller.state}
 
 @app.post("/api/frame")
 def frame_job(req: FramingRequest):
@@ -267,6 +278,8 @@ def query_endstops():
 
 @app.post("/api/verify/stepper_buzz")
 def stepper_buzz(req: StepperBuzzRequest):
+    if controller.state == MachineState.ESTOP:
+        controller.reset_estop()
     result = controller.verification.stepper_buzz(req.stepper, req.distance)
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("message"))
@@ -281,6 +294,8 @@ def dump_tmc(stepper: str = "stepper_x"):
 
 @app.post("/api/verify/enable_steppers")
 def verify_steppers(req: EnableSteppersRequest):
+    if controller.state == MachineState.ESTOP and req.enable:
+        controller.reset_estop()
     return controller.verification.verify_stepper_enable(req.enable)
 
 @app.get("/api/input_shaper")

@@ -300,6 +300,16 @@
                                             <span class="ms-factor-val" id="valSpeedFactor">100 %</span>
                                         </div>
                                     </div>
+
+                                    <!-- Motor Doğrulama & Hızlı Test (Buzz) -->
+                                    <div class="ms-buzz-quick-row">
+                                        <span class="ms-slider-label">Test & Doğrulama (Buzz):</span>
+                                        <div class="ms-btn-group" style="margin-top: 4px;">
+                                            <button class="ms-btn ms-btn-xs" id="btnBuzzX" title="X motorunu test et">🔊 Buzz X</button>
+                                            <button class="ms-btn ms-btn-xs" id="btnBuzzY" title="Y motorunu test et">🔊 Buzz Y</button>
+                                            <button class="ms-btn ms-btn-xs ms-btn-primary" id="btnClearEstop" title="Acil Durdurmayı Sıfırla">↺ Sıfırla (Reset)</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -487,8 +497,10 @@
                                     <button class="ms-macro-chip" data-cmd="G28">G28</button>
                                     <button class="ms-macro-chip" data-cmd="G28 X">G28 X</button>
                                     <button class="ms-macro-chip" data-cmd="G28 Y">G28 Y</button>
-                                    <button class="ms-macro-chip" data-cmd="G28 Z">G28 Z</button>
-                                    <button class="ms-macro-chip" data-cmd="FIRMWARE_RESTART">FIRMWARE_RESTART</button>
+                                    <button class="ms-macro-chip" data-cmd="BUZZ X">BUZZ X</button>
+                                    <button class="ms-macro-chip" data-cmd="BUZZ Y">BUZZ Y</button>
+                                    <button class="ms-macro-chip" data-cmd="ESTOP SIFIRLA">SIFIRLA</button>
+                                    <button class="ms-macro-chip" data-cmd="FIRMWARE_RESTART">RESTART</button>
                                     <button class="ms-macro-chip" data-cmd="SET_AIR_ASSIST ACTIVE=1">HAVA AÇ</button>
                                     <button class="ms-macro-chip" data-cmd="SET_AIR_ASSIST ACTIVE=0">HAVA KAPAT</button>
                                 </div>
