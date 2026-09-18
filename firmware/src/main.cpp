@@ -155,7 +155,9 @@ void dispatch_command(uint8_t opcode, const uint8_t* payload, uint8_t len, uint8
         }
 
         case CMD_ENABLE_MOTORS: {
-            if (len >= 1) {
+            if (len == 1) {
+                estop_triggered = false;
+                digitalWrite(PIN_LED_STATUS, LOW);
                 StepTimer::enableMotors(payload[0]);
                 send_ack(seq_id);
             }
@@ -331,8 +333,8 @@ void loop() {
     while (Serial.available()) {
         uint8_t byte_in = Serial.read();
 
-        // Anlık Out-of-band Acil Durdurma Byte
-        if (byte_in == PROTOCOL_URGENT_ESTOP) {
+        // Anlık Out-of-band Acil Durdurma Byte (Sadece paket bekleme durumunda geçerlidir)
+        if (byte_in == PROTOCOL_URGENT_ESTOP && parse_state == WAIT_SYNC1) {
             trigger_emergency_stop();
             continue;
         }

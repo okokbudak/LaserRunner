@@ -38,38 +38,84 @@ class VerificationManager:
         """
         Klipper STEPPER_BUZZ komutu:
         İlgili motoru 1mm ileri ve geri hareket ettirerek kablolama ve yön kontrolü sağlar.
+        Kinematikten ve diğer motorlardan TAMAMEN İZOLE şekilde sadece hedef sürücüyü test eder.
         """
         stepper_name = stepper_name.lower().replace("stepper_", "")
         if not self.controller or not self.controller.transport.is_connected:
             return {"success": False, "message": "Cihaz bağlı değil!"}
 
-        dx = 0.0
-        dy = 0.0
-        dz = 0.0
+        spm = self.config_manager.get_steps_per_mm() if self.config_manager else {}
 
         if stepper_name == "x":
-            dx = distance_mm
-        elif stepper_name in ("y", "y1"):
-            dy = distance_mm
+            bitmask = 0x01
+            steps = int(round(distance_mm * spm.get("x", 80.0)))
+            target_axis = "x"
+        elif stepper_name == "y":
+            bitmask = 0x02
+            steps = int(round(distance_mm * spm.get("y", 80.0)))
+            target_axis = "y1"
+        elif stepper_name == "y1":
+            bitmask = 0x04
+            steps = int(round(distance_mm * spm.get("y", 80.0)))
+            target_axis = "y2"
         elif stepper_name == "z":
-            dz = distance_mm
+            bitmask = 0x08
+            steps = int(round(distance_mm * spm.get("z", 400.0)))
+            target_axis = "z"
         else:
             return {"success": False, "message": f"Geçersiz step motor adı: {stepper_name}"}
 
-        # 3 kez ileri-geri döngüsü (titreşim/buzz testi)
+        if steps <= 0:
+            steps = 80
+
+        # Adım aralığı (20 mm/s hızında, mikrosaniye)
+        interval_us = int(round(1_000_000.0 / (20.0 * (steps / distance_mm))))
+        interval_us = max(200, min(10000, interval_us))
+
         try:
-            self.controller.enable_motors(True)
+            # SADECE test edilen motor sürücüsünü enerjilendir!
+            self.controller.enable_motors(bitmask)
+            time.sleep(0.05)
+
             for _ in range(3):
-                # İleri
-                self.controller.jog(dx, dy, dz, speed_mm_s=20.0)
+                # 1. İleri Yönde Adım Bloğu
+                fwd_block = {
+                    "total_steps": steps,
+                    "steps_x": steps if target_axis == "x" else 0,
+                    "steps_y1": steps if target_axis == "y1" else 0,
+                    "steps_y2": steps if target_axis == "y2" else 0,
+                    "steps_z": steps if target_axis == "z" else 0,
+                    "dir_bits": (0x01 if target_axis == "x" else (0x02 if target_axis == "y1" else (0x04 if target_axis == "y2" else 0x08))),
+                    "start_interval_us": interval_us,
+                    "end_interval_us": interval_us,
+                    "laser_power_start": 0,
+                    "laser_power_end": 0
+                }
+                self.controller.transport.send_motion_block(fwd_block)
                 time.sleep(0.3)
-                # Geri
-                self.controller.jog(-dx, -dy, -dz, speed_mm_s=20.0)
+
+                # 2. Geri Yönde Adım Bloğu
+                rev_block = {
+                    "total_steps": steps,
+                    "steps_x": steps if target_axis == "x" else 0,
+                    "steps_y1": steps if target_axis == "y1" else 0,
+                    "steps_y2": steps if target_axis == "y2" else 0,
+                    "steps_z": steps if target_axis == "z" else 0,
+                    "dir_bits": 0,
+                    "start_interval_us": interval_us,
+                    "end_interval_us": interval_us,
+                    "laser_power_start": 0,
+                    "laser_power_end": 0
+                }
+                self.controller.transport.send_motion_block(rev_block)
                 time.sleep(0.3)
+
+            # Test bitince tüm motorları tekrar normal idle modunda tut
+            self.controller.enable_motors(True)
 
             return {
                 "success": True,
-                "message": f"{stepper_name.upper()} motoru {distance_mm}mm ileri-geri hareket ettirildi. Yönü kontrol edin."
+                "message": f"{stepper_name.upper()} motoru (Driver) {distance_mm}mm bağımsız ileri-geri hareket ettirildi."
             }
         except Exception as e:
             return {"success": False, "message": str(e)}

@@ -180,8 +180,13 @@ class LaserRunnerController:
         self.transport.disconnect()
         self.state = MachineState.DISCONNECTED
 
-    def enable_motors(self, enable: bool = True):
-        bitmask = 0x0F if enable else 0x00
+    def enable_motors(self, enable: Any = True):
+        if isinstance(enable, bool):
+            bitmask = 0x0F if enable else 0x00
+        elif isinstance(enable, int):
+            bitmask = enable & 0x0F
+        else:
+            bitmask = 0x0F if enable else 0x00
         frame = self.transport.codec.encode_enable_motors(bitmask)
         self.transport.send_raw(frame)
 
