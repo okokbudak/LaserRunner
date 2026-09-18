@@ -1,5 +1,7 @@
 import os
 import asyncio
+import threading
+import time
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -8,6 +10,7 @@ from pydantic import BaseModel
 import serial.tools.list_ports
 
 from ..core.controller import LaserRunnerController, MachineState
+from ..core.config_manager import ConfigManager
 from ..cam.framing import FramingEngine
 from ..cam.vector_engine import VectorEngine, LayerSettings
 from ..cam.raster_engine import RasterEngine
@@ -300,6 +303,69 @@ def get_input_shaper_status():
             "pulses": shaper.pulses_y
         }
     }
+
+# ==========================================
+# KLIPPER TARZI CANLI YAPILANDIRMA (laserrunner.cfg)
+# ==========================================
+class SaveConfigRequest(BaseModel):
+    content: str
+
+def _get_cfg_path() -> str:
+    # 1. Proje içi config/laserrunner.cfg
+    p1 = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "config", "laserrunner.cfg"))
+    if os.path.exists(p1):
+        return p1
+    # 2. Çalışma dizini config/laserrunner.cfg
+    p2 = os.path.abspath(os.path.join(os.getcwd(), "config", "laserrunner.cfg"))
+    if os.path.exists(p2):
+        return p2
+    return p1
+
+@app.get("/api/config")
+def get_config_file():
+    cfg_path = _get_cfg_path()
+    if not os.path.exists(cfg_path):
+        raise HTTPException(status_code=404, detail=f"Yapılandırma dosyası bulunamadı: {cfg_path}")
+    with open(cfg_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    return {"path": cfg_path, "content": content}
+
+@app.post("/api/config")
+def save_config_file(req: SaveConfigRequest):
+    cfg_path = _get_cfg_path()
+    try:
+        with open(cfg_path, "w", encoding="utf-8") as f:
+            f.write(req.content)
+
+        # Yapılandırmayı belleğe yeniden yükle
+        controller.config_manager = ConfigManager(cfg_path)
+        spm = controller.config_manager.get_steps_per_mm()
+        mach = controller.config_manager.get_machine_config()
+        controller.kinematics_type = mach.get("kinematics", "cartesian")
+        controller.kinematics = controller._build_kinematics(controller.kinematics_type, spm)
+        controller.step_generator.kinematics = controller.kinematics
+        controller.macro_engine.load_macros_from_config(controller.config_manager.get_macros())
+
+        # TMC sürücü register ayarlarını UART üzerinden hemen güncelle
+        if controller.transport.is_connected:
+            controller.apply_tmc_configurations()
+
+        return {
+            "success": True,
+            "message": "laserrunner.cfg başarıyla kaydedildi ve TMC/Kinematik ayarları güncellendi!"
+        }
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+@app.post("/api/config/restart")
+def restart_laserrunner_service():
+    def _do_restart():
+        time.sleep(0.5)
+        # Linux systemd servisini yeniden başlat
+        os.system("echo 19852357 | sudo -S systemctl restart laserrunner")
+
+    threading.Thread(target=_do_restart, daemon=True).start()
+    return {"success": True, "message": "LaserRunner servisi yeniden başlatılıyor..."}
 
 # ==========================================
 # CANLI TELEMETRİ WEBSOCKET

@@ -143,6 +143,7 @@
                     <button class="tab-btn active" data-tab="tab-control">Kontrol & Jog</button>
                     <button class="tab-btn" data-tab="tab-layers">Katmanlar</button>
                     <button class="tab-btn" data-tab="tab-machine">Makine (STM32)</button>
+                    <button class="tab-btn" data-tab="tab-config">⚙️ Yapılandırma (cfg)</button>
                     <button class="tab-btn" data-tab="tab-console">Konsol</button>
                 </div>
 
@@ -333,6 +334,17 @@
                         <div class="control-card">
                             <h3>TMC2209 Sürücüler & Akım Ayarları</h3>
                             
+                            <!-- Buzz Test Mesafesi Seçimi -->
+                            <div class="form-row" style="margin-bottom: 12px; background: rgba(0, 240, 255, 0.05); padding: 8px 12px; border-radius: 6px; border: 1px dashed rgba(0,240,255,0.3);">
+                                <label style="color: var(--accent-cyan); font-weight: 500;">Test (Buzz) Mesafesi:</label>
+                                <select id="buzzDistanceSelect" style="max-width: 170px;">
+                                    <option value="1.0">1 mm (9° - Küçük Tık)</option>
+                                    <option value="5.0" selected>5 mm (45° - Belirgin Dönüş)</option>
+                                    <option value="10.0">10 mm (90° - Çeyrek Tur)</option>
+                                    <option value="20.0">20 mm (180° - Yarım Tur)</option>
+                                </select>
+                            </div>
+                            
                             <!-- Driver 0: X Ekseni -->
                             <div class="tmc-card" style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; border:1px solid var(--card-border); margin-bottom:12px;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -404,7 +416,28 @@
                         </div>
                     </div>
 
-                    <!-- TAB 4: Canlı Konsol ve Telemetri -->
+                    <!-- TAB 4: Klipper Tarzı laserrunner.cfg Editörü -->
+                    <div class="tab-pane" id="tab-config">
+                        <div class="control-card config-editor-card">
+                            <div class="config-header">
+                                <div class="config-title">
+                                    <h3>⚙️ laserrunner.cfg Yapılandırması</h3>
+                                    <span class="config-path" id="configFilePath">config/laserrunner.cfg</span>
+                                </div>
+                                <div class="config-actions">
+                                    <button class="btn-micro" id="btnReloadConfig" title="Dosyayı Disktan Yeniden Oku">🔄 Yenile</button>
+                                    <button class="btn-action" id="btnSaveConfig" style="padding: 6px 14px; font-size: 0.8rem;" title="Değişiklikleri Kaydet ve Ayarları Doğrudan Uygula">💾 Kaydet & Uygula</button>
+                                    <button class="btn-action" id="btnSaveRestartConfig" style="padding: 6px 14px; font-size: 0.8rem; background: linear-gradient(135deg, #ff9900, #ff5500);" title="Kaydet ve Host Servisini Yeniden Başlat">⚡ Kaydet & Yeniden Başlat</button>
+                                </div>
+                            </div>
+                            <div class="config-editor-wrapper">
+                                <textarea id="configEditorTextarea" spellcheck="false" placeholder="laserrunner.cfg dosyası yükleniyor..."></textarea>
+                            </div>
+                            <div class="config-status-bar" id="configStatusBar">Dosya hazır</div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5: Canlı Konsol ve Telemetri -->
                     <div class="tab-pane" id="tab-console">
                         <div class="control-card">
                             <h3>Firmware Durumu</h3>

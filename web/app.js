@@ -401,6 +401,9 @@ function setupEventListeners() {
             document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
             btn.classList.add("active");
             document.getElementById(btn.dataset.tab).classList.add("active");
+            if (btn.dataset.tab === "tab-config") {
+                loadConfigFile();
+            }
         });
     });
 
@@ -550,12 +553,13 @@ function setupEventListeners() {
     document.querySelectorAll(".btn-buzz").forEach(btn => {
         btn.addEventListener("click", async () => {
             const stepper = btn.dataset.stepper;
-            log(`${stepper.toUpperCase()} test ediliyor (1mm titreşim/buzz)...`, "info");
+            const dist = parseFloat(document.getElementById("buzzDistanceSelect")?.value || "5.0");
+            log(`${stepper.toUpperCase()} test ediliyor (${dist}mm bağımsız buzz)...`, "info");
             try {
                 const res = await fetch("/api/verify/stepper_buzz", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ stepper, distance: 1.0 })
+                    body: JSON.stringify({ stepper, distance: dist })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -584,4 +588,67 @@ function setupEventListeners() {
             log(motorsLocked ? "Motor tutma torku aktif." : "Motorlar serbest bırakıldı (El ile hareket ettirilebilir).", "info");
         });
     }
+
+    // ==========================================
+    // KLIPPER TARZI laserrunner.cfg DÜZENLEYİCİ
+    // ==========================================
+    const configEditor = document.getElementById("configEditorTextarea");
+    const configPath = document.getElementById("configFilePath");
+    const configStatus = document.getElementById("configStatusBar");
+    const btnReloadConfig = document.getElementById("btnReloadConfig");
+    const btnSaveConfig = document.getElementById("btnSaveConfig");
+    const btnSaveRestartConfig = document.getElementById("btnSaveRestartConfig");
+
+    async function loadConfigFile() {
+        if (!configEditor) return;
+        configStatus.textContent = "Yapılandırma dosyası okunuyor...";
+        try {
+            const res = await fetch("/api/config");
+            const data = await res.json();
+            if (res.ok) {
+                configEditor.value = data.content;
+                if (configPath) configPath.textContent = data.path;
+                configStatus.textContent = `Yüklendi: ${new Date().toLocaleTimeString()} (${data.content.length} karakter)`;
+            } else {
+                configStatus.textContent = `Hata: ${data.detail || "Dosya okunamadı"}`;
+            }
+        } catch (err) {
+            configStatus.textContent = `Bağlantı hatası: ${err.message}`;
+        }
+    }
+
+    async function saveConfigFile(restart = false) {
+        if (!configEditor) return;
+        configStatus.textContent = restart ? "Kaydediliyor ve sistem yeniden başlatılıyor..." : "Kaydediliyor...";
+        try {
+            const res = await fetch("/api/config", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content: configEditor.value })
+            });
+            const data = await res.json();
+            if (data.success) {
+                log(data.message, "success");
+                if (restart) {
+                    configStatus.textContent = "Servis yeniden başlatılıyor... Lütfen 2-3 saniye bekleyin.";
+                    await fetch("/api/config/restart", { method: "POST" });
+                    setTimeout(() => {
+                        configStatus.textContent = "Sistem yeniden başlatıldı!";
+                        loadConfigFile();
+                    }, 2500);
+                } else {
+                    configStatus.textContent = `Başarıyla kaydedildi ve uygulandı: ${new Date().toLocaleTimeString()}`;
+                }
+            } else {
+                configStatus.textContent = `Kayıt hatası: ${data.message}`;
+                log(`Kayıt hatası: ${data.message}`, "error");
+            }
+        } catch (err) {
+            configStatus.textContent = `Hata: ${err.message}`;
+        }
+    }
+
+    if (btnReloadConfig) btnReloadConfig.addEventListener("click", loadConfigFile);
+    if (btnSaveConfig) btnSaveConfig.addEventListener("click", () => saveConfigFile(false));
+    if (btnSaveRestartConfig) btnSaveRestartConfig.addEventListener("click", () => saveConfigFile(true));
 }

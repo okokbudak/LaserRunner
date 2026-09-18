@@ -771,3 +771,89 @@ input[type="range"] {
     border-color: var(--accent-cyan);
 }
 
+/* ============================================================
+   KLIPPER TARZI CONFIG EDITÖRÜ STİLLERİ
+   ============================================================ */
+.config-editor-card {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 210px);
+    min-height: 500px;
+    padding: 12px;
+}
+
+.config-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--card-border);
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.config-title h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.config-path {
+    font-size: 0.75rem;
+    color: var(--accent-cyan);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    background: rgba(0, 240, 255, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.config-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.config-editor-wrapper {
+    flex: 1;
+    position: relative;
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: #0d1117;
+}
+
+#configEditorTextarea {
+    width: 100%;
+    height: 100%;
+    background: #0a0d14;
+    color: #e6edf3;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    padding: 12px;
+    border: none;
+    outline: none;
+    resize: none;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow-x: auto;
+    tab-size: 4;
+}
+
+#configEditorTextarea:focus {
+    background: #0c1018;
+}
+
+.config-status-bar {
+    margin-top: 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+}
+
