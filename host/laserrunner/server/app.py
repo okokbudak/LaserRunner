@@ -82,6 +82,16 @@ class FramingRequest(BaseModel):
     speed: float = 40.0
     power_percent: float = 0.5
 
+class TMCConfigRequest(BaseModel):
+    motor_id: int # 0 for X (Driver 0), 1 for Y (Driver 1)
+    run_current_ma: int = 800
+    hold_current_ma: int = 400
+    microsteps: int = 16
+    mode: int = 0 # 0: SpreadCycle, 1: StealthChop, 2: Hybrid
+    interpolate: bool = True
+    stealthchop_threshold_speed: int = 0
+    sg_thresh: int = 65
+
 class ConfigRequest(BaseModel):
     kinematics: str = "cartesian"
     steps_per_mm_x: float = 80.0
@@ -218,6 +228,24 @@ def execute_macro(req: MacroExecuteRequest):
         return {"status": "ok", "macro": req.macro, "executed_lines": lines}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/tmc/configure")
+def configure_tmc(req: TMCConfigRequest):
+    controller.configure_tmc_driver(
+        motor_id=req.motor_id,
+        run_current_ma=req.run_current_ma,
+        hold_current_ma=req.hold_current_ma,
+        microsteps=req.microsteps,
+        mode=req.mode,
+        interpolate=req.interpolate,
+        stealthchop_threshold_speed=req.stealthchop_threshold_speed,
+        sg_thresh=req.sg_thresh
+    )
+    return {"status": "ok", "motor_id": req.motor_id}
+
+@app.get("/api/tmc/drivers")
+def get_tmc_drivers():
+    return controller.config_manager.get_tmc_drivers()
 
 # ==========================================
 # DONANIM DOĞRULAMA & TANILAMA (VERIFICATIONS)

@@ -35,6 +35,10 @@ class SerialTransport:
         self._lock = threading.Lock()
         self._slot_event = threading.Event()
 
+    @property
+    def is_connected(self) -> bool:
+        return self.running and bool(self.serial and self.serial.is_open)
+
     def connect(self) -> bool:
         try:
             self.serial = serial.Serial(

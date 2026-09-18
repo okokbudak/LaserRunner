@@ -497,4 +497,91 @@ function setupEventListeners() {
             log("Auto-Squaring tamamlandı, köprü 90° hizalandı!", "success");
         });
     }
+
+    // TMC2209 Ayarlarını Sürücülere Yaz
+    const btnApplyTmc = document.getElementById("btnApplyTmc");
+    if (btnApplyTmc) {
+        btnApplyTmc.addEventListener("click", async () => {
+            try {
+                // X Ekseni (Motor 0)
+                const runX = parseInt(document.getElementById("tmcRunCurrentX").value);
+                const holdX = parseInt(document.getElementById("tmcHoldCurrentX").value);
+                const ustepX = parseInt(document.getElementById("tmcMicrostepsX").value);
+                const modeX = parseInt(document.getElementById("tmcModeX").value);
+
+                await fetch("/api/tmc/configure", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        motor_id: 0,
+                        run_current_ma: runX,
+                        hold_current_ma: holdX,
+                        microsteps: ustepX,
+                        mode: modeX
+                    })
+                });
+
+                // Y Ekseni (Motor 1)
+                const runY = parseInt(document.getElementById("tmcRunCurrentY").value);
+                const holdY = parseInt(document.getElementById("tmcHoldCurrentY").value);
+                const ustepY = parseInt(document.getElementById("tmcMicrostepsY").value);
+                const modeY = parseInt(document.getElementById("tmcModeY").value);
+
+                await fetch("/api/tmc/configure", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        motor_id: 1,
+                        run_current_ma: runY,
+                        hold_current_ma: holdY,
+                        microsteps: ustepY,
+                        mode: modeY
+                    })
+                });
+
+                log(`TMC2209 Güncellendi: X=${runX}mA (${modeX === 0 ? "SpreadCycle" : "StealthChop"}), Y=${runY}mA`, "success");
+            } catch (e) {
+                log(`TMC güncelleme hatası: ${e}`, "error");
+            }
+        });
+    }
+
+    // STEPPER_BUZZ Testleri
+    document.querySelectorAll(".btn-buzz").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const stepper = btn.dataset.stepper;
+            log(`${stepper.toUpperCase()} test ediliyor (1mm titreşim/buzz)...`, "info");
+            try {
+                const res = await fetch("/api/verify/stepper_buzz", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ stepper, distance: 1.0 })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    log(data.message, "success");
+                } else {
+                    log(`Test başarısız: ${data.message}`, "error");
+                }
+            } catch (e) {
+                log(`Test hatası: ${e}`, "error");
+            }
+        });
+    });
+
+    // Motor Kilidi Aç / Kapat
+    const btnToggleMotors = document.getElementById("btnToggleMotors");
+    let motorsLocked = true;
+    if (btnToggleMotors) {
+        btnToggleMotors.addEventListener("click", async () => {
+            motorsLocked = !motorsLocked;
+            await fetch("/api/verify/enable_steppers", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ enable: motorsLocked })
+            });
+            btnToggleMotors.textContent = motorsLocked ? "🔓 Motorları Bırak" : "🔒 Motorları Kilitle";
+            log(motorsLocked ? "Motor tutma torku aktif." : "Motorlar serbest bırakıldı (El ile hareket ettirilebilir).", "info");
+        });
+    }
 }

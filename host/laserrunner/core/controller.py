@@ -109,11 +109,68 @@ class LaserRunnerController:
             self.transport.port = port
         if self.transport.connect():
             self.state = MachineState.IDLE
-            time.sleep(0.5)
+            time.sleep(0.2)
+            self.apply_tmc_configurations()
             self.enable_motors(True)
             return True
         self.state = MachineState.DISCONNECTED
         return False
+
+    def apply_tmc_configurations(self):
+        """laserrunner.cfg dosyasındaki TMC2209 ayarlarını mikrodenetleyiciye gönderir."""
+        tmc_drivers = self.config_manager.get_tmc_drivers()
+        axis_map = {
+            "stepper_x": 0,
+            "stepper_y": 1,
+            "stepper_y1": 2,
+            "stepper_z": 3,
+            "stepper_a": 4
+        }
+        for stepper_name, cfg in tmc_drivers.items():
+            motor_id = axis_map.get(stepper_name)
+            if motor_id is not None:
+                run_ma = int(cfg.get("run_current", 0.8) * 1000)
+                hold_ma = int(cfg.get("hold_current", 0.4) * 1000)
+                mode = int(cfg.get("mode_code", 0))
+                microsteps = int(cfg.get("microsteps", 16))
+                interpolate = bool(cfg.get("interpolate", True))
+                stealth_speed = int(cfg.get("stealthchop_threshold", 0))
+                sg_thresh = int(cfg.get("sgthrs", 65))
+                self.configure_tmc_driver(
+                    motor_id=motor_id,
+                    run_current_ma=run_ma,
+                    hold_current_ma=hold_ma,
+                    microsteps=microsteps,
+                    mode=mode,
+                    interpolate=interpolate,
+                    stealthchop_threshold_speed=stealth_speed,
+                    sg_thresh=sg_thresh
+                )
+                time.sleep(0.02)
+
+    def configure_tmc_driver(
+        self,
+        motor_id: int,
+        run_current_ma: int,
+        hold_current_ma: int,
+        microsteps: int = 16,
+        mode: int = 0,
+        interpolate: bool = True,
+        stealthchop_threshold_speed: int = 0,
+        sg_thresh: int = 65
+    ):
+        frame = self.transport.codec.encode_config_tmc(
+            motor_id=motor_id,
+            mode=mode,
+            run_current_ma=run_current_ma,
+            hold_current_ma=hold_current_ma,
+            microsteps=microsteps,
+            interpolate=interpolate,
+            stealthchop_threshold_speed=stealthchop_threshold_speed,
+            sg_thresh=sg_thresh
+        )
+        self.transport.send_raw(frame)
+        print(f"[Controller] TMC Motor {motor_id} parametreleri yüklendi: {run_current_ma}mA, {microsteps}uStep, mod={mode}")
 
     def disconnect(self):
         self.set_air_assist(False)

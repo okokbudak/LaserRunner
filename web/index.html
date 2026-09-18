@@ -328,6 +328,80 @@
                             </div>
                             <button id="btnSaveConfig" class="btn-action full-width">Ayarları Kaydet ve Uygula</button>
                         </div>
+
+                        <!-- TMC2209 Sürücü Yönetim Kartı -->
+                        <div class="control-card">
+                            <h3>TMC2209 Sürücüler & Akım Ayarları</h3>
+                            
+                            <!-- Driver 0: X Ekseni -->
+                            <div class="tmc-card" style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; border:1px solid var(--card-border); margin-bottom:12px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                    <strong style="color:var(--accent-cyan);">Driver 0: Eksen X (Slot 0 - UART PC4)</strong>
+                                    <button class="btn-micro btn-buzz" data-stepper="stepper_x" title="Motoru 1mm ileri-geri hareket ettir">🔊 X Test (Buzz)</button>
+                                </div>
+                                <div class="form-row">
+                                    <label>Çalışma Akımı (mA):</label>
+                                    <input type="number" id="tmcRunCurrentX" value="800" min="200" max="1500" step="50">
+                                </div>
+                                <div class="form-row">
+                                    <label>Bekleme Akımı (mA):</label>
+                                    <input type="number" id="tmcHoldCurrentX" value="400" min="100" max="1000" step="50">
+                                </div>
+                                <div class="form-row">
+                                    <label>Mikro-Adım:</label>
+                                    <select id="tmcMicrostepsX">
+                                        <option value="16" selected>1/16 (Interpolasyon 256)</option>
+                                        <option value="32">1/32</option>
+                                        <option value="64">1/64</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label>Sürücü Modu:</label>
+                                    <select id="tmcModeX">
+                                        <option value="0" selected>SpreadCycle (Yüksek Tork - Önerilen)</option>
+                                        <option value="1">StealthChop (Sessiz Çalışma)</option>
+                                        <option value="2">Dinamik Hibrit</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Driver 1: Y Ekseni -->
+                            <div class="tmc-card" style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; border:1px solid var(--card-border); margin-bottom:12px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                    <strong style="color:var(--accent-cyan);">Driver 1: Eksen Y (Slot 1 - UART PD11)</strong>
+                                    <button class="btn-micro btn-buzz" data-stepper="stepper_y" title="Motoru 1mm ileri-geri hareket ettir">🔊 Y Test (Buzz)</button>
+                                </div>
+                                <div class="form-row">
+                                    <label>Çalışma Akımı (mA):</label>
+                                    <input type="number" id="tmcRunCurrentY" value="900" min="200" max="1500" step="50">
+                                </div>
+                                <div class="form-row">
+                                    <label>Bekleme Akımı (mA):</label>
+                                    <input type="number" id="tmcHoldCurrentY" value="450" min="100" max="1000" step="50">
+                                </div>
+                                <div class="form-row">
+                                    <label>Mikro-Adım:</label>
+                                    <select id="tmcMicrostepsY">
+                                        <option value="16" selected>1/16 (Interpolasyon 256)</option>
+                                        <option value="32">1/32</option>
+                                        <option value="64">1/64</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label>Sürücü Modu:</label>
+                                    <select id="tmcModeY">
+                                        <option value="0" selected>SpreadCycle (Yüksek Tork - Önerilen)</option>
+                                        <option value="1">StealthChop (Sessiz Çalışma)</option>
+                                        <option value="2">Dinamik Hibrit</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style="display:flex; gap:8px;">
+                                <button id="btnApplyTmc" class="btn-action full-width">⚡ TMC Ayarlarını Sürücülere Yaz</button>
+                                <button id="btnToggleMotors" class="btn-micro" style="padding:6px 12px; white-space:nowrap;">🔓 Motorları Bırak</button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- TAB 4: Canlı Konsol ve Telemetri -->

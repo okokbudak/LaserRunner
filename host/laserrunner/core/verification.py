@@ -61,10 +61,10 @@ class VerificationManager:
             self.controller.enable_motors(True)
             for _ in range(3):
                 # İleri
-                self.controller.jog(dx, dy, dz, speed=20.0)
+                self.controller.jog(dx, dy, dz, speed_mm_s=20.0)
                 time.sleep(0.3)
                 # Geri
-                self.controller.jog(-dx, -dy, -dz, speed=20.0)
+                self.controller.jog(-dx, -dy, -dz, speed_mm_s=20.0)
                 time.sleep(0.3)
 
             return {
