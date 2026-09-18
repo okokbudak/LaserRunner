@@ -18,6 +18,10 @@ CLR_BLUE="\033[0;34m"
 CLR_CYAN="\033[0;36m"
 CLR_WHITE="\033[1;37m"
 
+# Git ve Depo Ayarları
+DEFAULT_REPO_URL="https://github.com/Kokbudak/LaserRunner.git"
+REPO_URL="${LASERRUNNER_REPO:-$DEFAULT_REPO_URL}"
+
 # Dizin ve Dosya Yolları
 TARGET_USER="${SUDO_USER:-$USER}"
 TARGET_HOME=$(eval echo "~$TARGET_USER")
@@ -57,9 +61,29 @@ get_service_status() {
     fi
 }
 
+get_git_status() {
+    if [ ! -d "$INSTALL_DIR/.git" ]; then
+        echo -e "${CLR_RED}Depo Bulunamadı${CLR_RESET}"
+        return
+    fi
+    
+    cd "$INSTALL_DIR" 2>/dev/null || return
+    local local_commit=$(git rev-parse --short HEAD 2>/dev/null || echo "Bilinmiyor")
+    
+    # Arka planda uzaktan commit kontrolü (1 saniye zaman aşımı ile)
+    git fetch origin main --quiet 2>/dev/null || true
+    local remote_commit=$(git rev-parse --short origin/main 2>/dev/null || echo "$local_commit")
+
+    if [ "$local_commit" = "$remote_commit" ]; then
+        echo -e "${CLR_GREEN}Güncel ($local_commit)${CLR_RESET}"
+    else
+        echo -e "${CLR_YELLOW}Güncelleme Mevcut ($local_commit -> $remote_commit)${CLR_RESET}"
+    fi
+}
+
 get_venv_status() {
     if [ -f "$VENV_DIR/bin/python" ]; then
-        echo -e "${CLR_GREEN}Hazır ($($VENV_DIR/bin/python --version | awk '{print $2}'))${CLR_RESET}"
+        echo -e "${CLR_GREEN}Hazır ($($VENV_DIR/bin/python --version 2>/dev/null | awk '{print $2}'))${CLR_RESET}"
     else
         echo -e "${CLR_RED}Yok${CLR_RESET}"
     fi
@@ -77,10 +101,11 @@ print_status_box() {
     local ip=$(get_local_ip)
     echo -e "${CLR_BOLD}═════════════════════════════════════════════════════════════════════════${CLR_RESET}"
     echo -e " ${CLR_WHITE}Sistem Durumu:${CLR_RESET}"
-    echo -e "   • LaserRunner Servisi : $(get_service_status)"
-    echo -e "   • Python Sanal Ortamı : $(get_venv_status)"
-    echo -e "   • PlatformIO (F/W)    : $(get_pio_status)"
-    echo -e "   • Web Arayüzü Adresi  : ${CLR_CYAN}http://${ip}:8080${CLR_RESET}"
+    echo -e "   • LaserRunner Git Sürümü: $(get_git_status)"
+    echo -e "   • LaserRunner Servisi   : $(get_service_status)"
+    echo -e "   • Python Sanal Ortamı   : $(get_venv_status)"
+    echo -e "   • PlatformIO (F/W)      : $(get_pio_status)"
+    echo -e "   • Web Arayüzü Adresi    : ${CLR_CYAN}http://${ip}:8080${CLR_RESET}"
     echo -e "${CLR_BOLD}═════════════════════════════════════════════════════════════════════════${CLR_RESET}"
     echo ""
 }
@@ -92,31 +117,40 @@ install_laserrunner() {
     echo -e "\n${CLR_CYAN}[+] LaserRunner Kurulumu Başlatılıyor...${CLR_RESET}\n"
 
     # 1. İşletim Sistemi Paketleri
-    echo -e "${CLR_YELLOW}[1/6] Gerekli sistem paketleri yükleniyor (apt-get)...${CLR_RESET}"
+    echo -e "${CLR_YELLOW}[1/7] Gerekli sistem paketleri yükleniyor (apt-get)...${CLR_RESET}"
     sudo apt-get update
     sudo apt-get install -y python3 python3-pip python3-venv python3-dev \
         git curl build-essential libjpeg-dev zlib1g-dev udev
 
-    # 2. Kullanıcıyı dialout grubuna ekle (USB seri port izinleri)
-    echo -e "${CLR_YELLOW}[2/6] Kullanıcı izinleri yapılandırılıyor (dialout grubu)...${CLR_RESET}"
+    # 2. Git Deposunu Klonla (Eğer dizin yoksa)
+    echo -e "${CLR_YELLOW}[2/7] LaserRunner GitHub deposu kontrol ediliyor...${CLR_RESET}"
+    if [ ! -d "$INSTALL_DIR/.git" ]; then
+        echo -e "Depo klonlanıyor: ${CLR_CYAN}$REPO_URL${CLR_RESET}"
+        sudo -u "$TARGET_USER" git clone "$REPO_URL" "$INSTALL_DIR"
+    else
+        echo -e "${CLR_GREEN}Depo zaten mevcut ($INSTALL_DIR).${CLR_RESET}"
+    fi
+
+    # 3. Kullanıcıyı dialout grubuna ekle (USB seri port izinleri)
+    echo -e "${CLR_YELLOW}[3/7] Kullanıcı izinleri yapılandırılıyor (dialout grubu)...${CLR_RESET}"
     sudo usermod -a -G dialout "$TARGET_USER"
 
-    # 3. Udev Kurallarını Yükle
-    echo -e "${CLR_YELLOW}[3/6] Octopus Pro USB udev kuralları yükleniyor...${CLR_RESET}"
+    # 4. Udev Kurallarını Yükle
+    echo -e "${CLR_YELLOW}[4/7] Octopus Pro USB udev kuralları yükleniyor...${CLR_RESET}"
     if [ -f "$INSTALL_DIR/scripts/99-laserrunner.rules" ]; then
         sudo cp "$INSTALL_DIR/scripts/99-laserrunner.rules" /etc/udev/rules.d/
         sudo udevadm control --reload-rules
         sudo udevadm trigger
     fi
 
-    # 4. Python Sanal Ortamını (venv) Oluştur
-    echo -e "${CLR_YELLOW}[4/6] Python sanal ortamı (.venv) oluşturuluyor...${CLR_RESET}"
+    # 5. Python Sanal Ortamını (venv) Oluştur
+    echo -e "${CLR_YELLOW}[5/7] Python sanal ortamı (.venv) oluşturuluyor...${CLR_RESET}"
     if [ ! -d "$VENV_DIR" ]; then
         sudo -u "$TARGET_USER" python3 -m venv "$VENV_DIR"
     fi
 
-    # 5. Bağımlılıkları Yükle
-    echo -e "${CLR_YELLOW}[5/6] Python kütüphaneleri yükleniyor (FastAPI, PySerial, Pillow, NumPy)...${CLR_RESET}"
+    # 6. Bağımlılıkları Yükle
+    echo -e "${CLR_YELLOW}[6/7] Python kütüphaneleri yükleniyor (FastAPI, PySerial, Pillow, NumPy)...${CLR_RESET}"
     sudo -u "$TARGET_USER" "$VENV_DIR/bin/pip" install --upgrade pip
     sudo -u "$TARGET_USER" "$VENV_DIR/bin/pip" install pyserial fastapi uvicorn websockets pillow numpy
 
