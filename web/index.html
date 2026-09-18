@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LaserRunner Studio OS | Next-Gen Diode Laser & Motion Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Üst Başlık ve Hızlı Durum Çubuğu -->
+        <header class="top-bar">
+            <div class="brand">
+                <div class="laser-icon">
+                    <span class="laser-beam"></span>
+                    <span class="laser-pulse"></span>
+                </div>
+                <div class="brand-text">
+                    <h1>LaserRunner <span>OS</span></h1>
+                    <span class="version-tag">Klipper-Style / STM32F446</span>
+                </div>
+            </div>
+
+            <!-- Bağlantı Kontrolleri -->
+            <div class="connection-cluster">
+                <div class="select-wrapper">
+                    <select id="portSelect">
+                        <option value="">Port Taranıyor...</option>
+                    </select>
+                </div>
+                <button id="btnRefreshPorts" class="btn-icon" title="Portları Yenile">🔄</button>
+                <button id="btnConnect" class="btn-action">Bağlan</button>
+            </div>
+
+            <!-- Makine Durum Rozeti -->
+            <div class="machine-status-badge" id="statusBadge">
+                <span class="status-indicator"></span>
+                <span class="status-text" id="statusText">ÇEVRİMDIŞI</span>
+            </div>
+
+            <!-- Canlı Koordinat Hızlı Göstergesi -->
+            <div class="header-coords">
+                <div class="coord-pill"><span class="axis-label">X</span><span id="hdrPosX" class="axis-val">0.00</span></div>
+                <div class="coord-pill"><span class="axis-label">Y</span><span id="hdrPosY" class="axis-val">0.00</span></div>
+                <div class="coord-pill"><span class="axis-label">Z</span><span id="hdrPosZ" class="axis-val">0.00</span></div>
+            </div>
+
+            <!-- Acil Durdurma Butonu -->
+            <div class="estop-wrapper">
+                <button id="btnEstop" class="btn-estop">
+                    <span class="estop-icon">🛑</span>
+                    <span>ACİL DURDUR</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Ana Çalışma Alanı: 3 Kolonlu Stüdyo -->
+        <main class="studio-body">
+            <!-- Sol CAD/CAM Araç Çubuğu -->
+            <aside class="left-toolbar">
+                <button class="tool-btn active" data-tool="select" title="Seç ve Taşı">
+                    <span class="tool-icon">↖</span>
+                </button>
+                <button class="tool-btn" data-tool="rect" title="Dikdörtgen Çiz">
+                    <span class="tool-icon">▢</span>
+                </button>
+                <button class="tool-btn" data-tool="circle" title="Daire Çiz">
+                    <span class="tool-icon">◯</span>
+                </button>
+                <button class="tool-btn" data-tool="line" title="Çizgi">
+                    <span class="tool-icon">╱</span>
+                </button>
+                <div class="toolbar-separator"></div>
+                <label class="tool-btn file-btn" title="Vektör Yükle (SVG / DXF)">
+                    <span class="tool-icon">📂</span>
+                    <input type="file" id="fileVector" accept=".svg,.dxf" style="display:none;">
+                </label>
+                <label class="tool-btn file-btn" title="Resim Yükle (Raster Engraving)">
+                    <span class="tool-icon">🖼️</span>
+                    <input type="file" id="fileRaster" accept="image/*" style="display:none;">
+                </label>
+                <div class="toolbar-separator"></div>
+                <button class="tool-btn" id="btnSetZero" title="Mevcut Konumu Sıfırla (G92 X0 Y0)">
+                    <span class="tool-icon">🎯</span>
+                </button>
+                <button class="tool-btn" id="btnClearCanvas" title="Çalışma Alanını Temizle">
+                    <span class="tool-icon">🗑️</span>
+                </button>
+            </aside>
+
+            <!-- Orta İnteraktif Çalışma Alanı (Canvas & Preview) -->
+            <section class="canvas-section">
+                <div class="canvas-header">
+                    <div class="canvas-info">
+                        <span>Çalışma Alanı: <strong>400 × 400 mm</strong></span>
+                        <span class="zoom-level">Yakınlaştırma: <span id="zoomVal">100%</span></span>
+                    </div>
+                    <div class="canvas-actions">
+                        <button id="btnZoomIn" class="btn-micro">+</button>
+                        <button id="btnZoomOut" class="btn-micro">-</button>
+                        <button id="btnResetView" class="btn-micro">Ortala</button>
+                    </div>
+                </div>
+
+                <div class="canvas-container" id="canvasContainer">
+                    <canvas id="laserCanvas" width="800" height="800"></canvas>
+                </div>
+
+                <!-- İş İlerleme Çubuğu -->
+                <div class="job-progress-container" id="progressContainer">
+                    <div class="progress-info">
+                        <span>İş Durumu: <strong id="jobStateLabel">Hazır</strong></span>
+                        <span id="jobPercent">0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="progressBarFill"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sağ Kontrol ve Ayarlar Paneli (Tabs) -->
+            <aside class="right-panel">
+                <div class="tab-headers">
+                    <button class="tab-btn active" data-tab="tab-control">Kontrol & Jog</button>
+                    <button class="tab-btn" data-tab="tab-layers">Katmanlar</button>
+                    <button class="tab-btn" data-tab="tab-machine">Makine (STM32)</button>
+                    <button class="tab-btn" data-tab="tab-console">Konsol</button>
+                </div>
+
+                <div class="tab-content-container">
+                    <!-- TAB 1: Jog & Lazer Kontrolü -->
+                    <div class="tab-pane active" id="tab-control">
+                        <!-- İş Başlatma / Çerçeveleme Kontrolleri -->
+                        <div class="control-card highlight-card">
+                            <h3>İşlem Kontrolü</h3>
+                            <div class="job-action-buttons">
+                                <button id="btnStartJob" class="btn-hero-primary">▶ İŞİ BAŞLAT</button>
+                                <button id="btnFrameJob" class="btn-hero-secondary">⛶ ÇERÇEVELE (FRAME)</button>
+                            </div>
+                        </div>
+
+                        <!-- Eksen Yönlendirme (Jog D-Pad) -->
+                        <div class="control-card">
+                            <h3>Eksen Kontrolleri</h3>
+                            <div class="dpad-container">
+                                <div class="dpad-row">
+                                    <button class="btn-jog" data-dx="-1" data-dy="1">↖</button>
+                                    <button class="btn-jog main-axis" data-dx="0" data-dy="1">Y+</button>
+                                    <button class="btn-jog" data-dx="1" data-dy="1">↗</button>
+                                </div>
+                                <div class="dpad-row">
+                                    <button class="btn-jog main-axis" data-dx="-1" data-dy="0">X-</button>
+                                    <button class="btn-home" id="btnHomeXY" title="Home X/Y">🏠</button>
+                                    <button class="btn-jog main-axis" data-dx="1" data-dy="0">X+</button>
+                                </div>
+                                <div class="dpad-row">
+                                    <button class="btn-jog" data-dx="-1" data-dy="-1">↙</button>
+                                    <button class="btn-jog main-axis" data-dx="0" data-dy="-1">Y-</button>
+                                    <button class="btn-jog" data-dx="1" data-dy="-1">↘</button>
+                                </div>
+                            </div>
+
+                            <div class="jog-step-selector">
+                                <label>Adım (mm):</label>
+                                <div class="step-buttons">
+                                    <button class="step-btn" data-val="0.1">0.1</button>
+                                    <button class="step-btn" data-val="1">1</button>
+                                    <button class="step-btn active" data-val="10">10</button>
+                                    <button class="step-btn" data-val="50">50</button>
+                                    <button class="step-btn" data-val="100">100</button>
+                                </div>
+                            </div>
+
+                            <div class="jog-speed-slider">
+                                <div class="slider-header">
+                                    <span>Jog Hızı:</span>
+                                    <span id="jogSpeedVal">40 mm/s</span>
+                                </div>
+                                <input type="range" id="jogSpeedSlider" min="5" max="150" value="40">
+                            </div>
+                        </div>
+
+                        <!-- Lazer Odaklama ve Test Ateşi -->
+                        <div class="control-card">
+                            <h3>Lazer Test & Odaklama</h3>
+                            <div class="laser-test-cluster">
+                                <div class="slider-header">
+                                    <span>Test Gücü:</span>
+                                    <span id="testPowerVal">%1.0</span>
+                                </div>
+                                <input type="range" id="testPowerSlider" min="0.1" max="10.0" step="0.1" value="1.0">
+                                <button id="btnLaserTestToggle" class="btn-test-laser">Lazer Işığını Aç</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: Katmanlar ve CAM Ayarları -->
+                    <div class="tab-pane" id="tab-layers">
+                        <div class="control-card">
+                            <h3>Kesim & Kazıma Katmanları</h3>
+                            <div class="layer-list" id="layerList">
+                                <div class="layer-item active">
+                                    <span class="layer-color" style="background:#00f0ff;"></span>
+                                    <div class="layer-info">
+                                        <strong>Katman 0 (Vektör)</strong>
+                                        <div class="layer-sub">Hız: 30 mm/s | Güç: %80 | 1 Pas</div>
+                                    </div>
+                                    <button class="btn-micro edit-layer">⚙</button>
+                                </div>
+                            </div>
+
+                            <div class="layer-settings-form">
+                                <h4>Katman Parametreleri</h4>
+                                <div class="form-row">
+                                    <label>Mod:</label>
+                                    <select id="layerMode">
+                                        <option value="cut">Vektör Kesim (Line)</option>
+                                        <option value="engrave">Vektör Çizim (Fill)</option>
+                                        <option value="raster">Raster Gravür (Image)</option>
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <label>Hız (mm/s):</label>
+                                    <input type="number" id="layerSpeed" value="30">
+                                </div>
+                                <div class="form-row">
+                                    <label>Maksimum Güç (%):</label>
+                                    <input type="number" id="layerPower" value="80" min="1" max="100">
+                                </div>
+                                <div class="form-row">
+                                    <label>Pas Sayısı:</label>
+                                    <input type="number" id="layerPasses" value="1" min="1" max="20">
+                                </div>
+                                <div class="form-row checkbox-row">
+                                    <input type="checkbox" id="layerDynamicPower" checked>
+                                    <label for="layerDynamicPower">Dinamik Güç Senkronizasyonu P(v)</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: Makine ve STM32 Konfigürasyonu -->
+                    <div class="tab-pane" id="tab-machine">
+                        <div class="control-card">
+                            <h3>Kinematik ve Donanım</h3>
+                            <div class="form-row">
+                                <label>Mekanik Tip:</label>
+                                <select id="kinematicsSelect">
+                                    <option value="cartesian">Kartezyen (Dual-Y)</option>
+                                    <option value="corexy">CoreXY</option>
+                                    <option value="awd_corexy">AWD CoreXY (4 Motor)</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label>X Adım/mm:</label>
+                                <input type="number" id="spmX" value="80.0">
+                            </div>
+                            <div class="form-row">
+                                <label>Y Adım/mm:</label>
+                                <input type="number" id="spmY" value="80.0">
+                            </div>
+                            <div class="form-row">
+                                <label>Maksimum İvme (mm/s²):</label>
+                                <input type="number" id="machineAccel" value="3000">
+                            </div>
+                            <div class="form-row">
+                                <label>Lazer PWM Pini:</label>
+                                <input type="text" value="PB0 (TIM3_CH3 - Octopus Pro)" disabled>
+                            </div>
+                            <button id="btnSaveConfig" class="btn-action full-width">Ayarları Kaydet ve Uygula</button>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: Canlı Konsol ve Telemetri -->
+                    <div class="tab-pane" id="tab-console">
+                        <div class="control-card">
+                            <h3>Firmware Durumu</h3>
+                            <div class="telemetry-grid">
+                                <div class="telemetry-item">
+                                    <span class="tel-label">Kuyruk Boşluğu:</span>
+                                    <span class="tel-val" id="telQueue">64 / 64</span>
+                                </div>
+                                <div class="telemetry-item">
+                                    <span class="tel-label">Lazer PWM:</span>
+                                    <span class="tel-val" id="telPwm">0</span>
+                                </div>
+                            </div>
+
+                            <h3>Sistem Günlüğü</h3>
+                            <div class="console-box" id="consoleLog">
+                                <div class="log-line info">[LaserRunner OS] Sistem başlatıldı. Port seçin ve bağlanın.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+[Unit]
+Description=LaserRunner Studio OS (Klipper-Style Laser Host)
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=dialout
+WorkingDirectory=/home/pi/LaserRunner
+Environment="PATH=/home/pi/LaserRunner/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/home/pi/LaserRunner/.venv/bin/python run.py
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

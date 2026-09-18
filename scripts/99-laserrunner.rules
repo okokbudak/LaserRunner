@@ -1,0 +1,10 @@
+# BTT Octopus Pro (STM32F446) ve USB-CDC Seri Port İzinleri
+# Kullanıcıların dialout grubunda sudo olmadan doğrudan bağlanabilmesini sağlar.
+
+# STM32 DFU Bootloader
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="df11", MODE="0666", GROUP="dialout"
+
+# STM32 Virtual COM Port (CDC-ACM)
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="5740", MODE="0666", GROUP="dialout", SYMLINK+="laserrunner"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="614e", MODE="0666", GROUP="dialout", SYMLINK+="laserrunner"
+KERNEL=="ttyACM*", MODE="0666", GROUP="dialout"

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# PlatformIO & Derleme Çıktıları
+.pio/
+.pioenvs/
+.piolibdeps/
+*.bin
+*.hex
+*.elf
+
+# IDE & Editör
+.vscode/
+.idea/
+*.swp
+*~
+
+# İşletim Sistemi
+.DS_Store
+Thumbs.db
