@@ -250,10 +250,15 @@ build_firmware() {
         echo ""
         read -p "Doğrudan DFU ile karta yüklemek istiyor musunuz? (e/H): " dfu_ans
         if [[ "$dfu_ans" =~ ^[eE]$ ]]; then
-            sudo -u "$TARGET_USER" "$PIO_BIN" run -e octopus_pro_f446 --target upload
+            echo -e "${CLR_YELLOW}DFU ile yükleniyor...${CLR_RESET}"
+            if command -v dfu-util &> /dev/null; then
+                sudo dfu-util -a 0 -d 0483:df11 --dfuse-address 0x08008000:leave -D "$BIN_DEST" && echo -e "\n${CLR_GREEN}[✔] DFU ile yükleme başarıyla tamamlandı!${CLR_RESET}" || sudo -u "$TARGET_USER" "$PIO_BIN" run -e octopus_pro_f446 --target upload
+            else
+                sudo -u "$TARGET_USER" "$PIO_BIN" run -e octopus_pro_f446 --target upload
+            fi
         fi
     else
-        echo -e "${CLR_RED}[X] Derleme başarısız oldu!${CLR_RESET}"
+        echo -e "${CLR_RED}[X] Derleme başarısız oldu! Lütfen yukarıdaki hata mesajını kontrol edin.${CLR_RESET}"
     fi
 
     read -p "Ana menüye dönmek için [Enter] tuşuna basın..."
