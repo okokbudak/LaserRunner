@@ -1,5 +1,8 @@
 #include "tmc_control.h"
 
+// Aktif sürücü yapılandırmaları
+TMCDriverConfig TMCDriverManager::active_configs[5];
+
 // Trinamic Standart CRC8 Fonksiyonu
 static uint8_t tmc_crc8(const uint8_t* data, size_t length) {
     uint8_t crc = 0;
@@ -19,6 +22,17 @@ static uint8_t tmc_crc8(const uint8_t* data, size_t length) {
 
 void TMCDriverManager::init() {
     applyDefaults();
+}
+
+uint8_t TMCDriverManager::getUartPinForMotor(uint8_t motor_id) {
+    switch (motor_id) {
+        case 0: return PIN_X_UART;
+        case 1: return PIN_Y1_UART;
+        case 2: return PIN_Y2_UART;
+        case 3: return PIN_Z_UART;
+        case 4: return PIN_A_UART;
+        default: return PIN_X_UART;
+    }
 }
 
 uint8_t TMCDriverManager::calculateCurrentScale(uint16_t current_ma, float rsense) {
@@ -82,12 +96,53 @@ void TMCDriverManager::writeTMC2209Register(uint8_t uart_pin, uint8_t reg_addr, 
     pinMode(uart_pin, INPUT_PULLUP);
 }
 
+void TMCDriverManager::setDriverMode(uint8_t motor_id, TMCMode mode) {
+    if (motor_id >= 5) return;
+    active_configs[motor_id].mode = mode;
+
+    uint8_t uart_pin = getUartPinForMotor(motor_id);
+
+    // GCONF: Reg 0x00
+    // Bit 2: en_SpreadCycle (1 = SpreadCycle, 0 = StealthChop)
+    // Bit 7: mstep_reg_select (1 = CHOPCONF.MRES register'ını kullan)
+    uint32_t gconf = (1 << 7); // mstep_reg_select aktif
+
+    if (mode == TMC_MODE_SPREADCYCLE) {
+        gconf |= (1 << 2); // Daima SpreadCycle (Sabit off-time kıyıcı, en yüksek tork)
+        writeTMC2209Register(uart_pin, 0x00, gconf);
+        // TPWMTHRS: 0 (StealthChop eşiği kapalı, daima SpreadCycle)
+        writeTMC2209Register(uart_pin, 0x13, 0);
+    } 
+    else if (mode == TMC_MODE_STEALTHCHOP) {
+        // en_SpreadCycle = 0 (StealthChop daima devrede, ultra sessiz voltaj modülasyonu)
+        writeTMC2209Register(uart_pin, 0x00, gconf);
+        // TPWMTHRS = 0 (Geçiş yok, motor tüm hızlarda StealthChop'ta kalır)
+        writeTMC2209Register(uart_pin, 0x13, 0);
+    } 
+    else if (mode == TMC_MODE_HYBRID) {
+        // Dinamik Hibrit: Düşük hızda StealthChop, eşik hızın üstünde SpreadCycle
+        writeTMC2209Register(uart_pin, 0x00, gconf); // en_SpreadCycle = 0
+        
+        // TPWMTHRS = fclk / (v * steps_per_mm)
+        // Trinamic dahili osilatör ~12.000.000 Hz
+        uint32_t speed_mm_s = active_configs[motor_id].stealthchop_threshold_speed;
+        if (speed_mm_s == 0) speed_mm_s = 60; // Varsayılan 60 mm/s eşiği
+        
+        uint32_t f_step = speed_mm_s * 80; // 80 step/mm standart
+        uint32_t tpwmthrs = 0;
+        if (f_step > 0) {
+            tpwmthrs = 12000000UL / f_step;
+            if (tpwmthrs > 0xFFFFF) tpwmthrs = 0xFFFFF;
+        }
+        writeTMC2209Register(uart_pin, 0x13, tpwmthrs);
+    }
+}
+
 bool TMCDriverManager::configureDriver(const TMCDriverConfig& config) {
-    uint8_t uart_pin = PIN_X_UART;
-    if (config.motor_id == 1) uart_pin = PIN_Y1_UART;
-    else if (config.motor_id == 2) uart_pin = PIN_Y2_UART;
-    else if (config.motor_id == 3) uart_pin = PIN_Z_UART;
-    else if (config.motor_id == 4) uart_pin = PIN_A_UART;
+    if (config.motor_id >= 5) return false;
+    active_configs[config.motor_id] = config;
+
+    uint8_t uart_pin = getUartPinForMotor(config.motor_id);
 
     // 1. Akım Ölçekleme (IHOLD_IRUN: Reg 0x10)
     uint8_t irun = calculateCurrentScale(config.run_current_ma, config.sense_resistor);
@@ -95,14 +150,8 @@ bool TMCDriverManager::configureDriver(const TMCDriverConfig& config) {
     uint32_t ihold_irun = (ihold & 0x1F) | ((irun & 0x1F) << 8) | (6 << 16); // IHOLDDELAY = 6
     writeTMC2209Register(uart_pin, 0x10, ihold_irun);
 
-    // 2. GCONF: Reg 0x00 (StealthChop vs SpreadCycle)
-    // Lazerlerde dar köşelerde ve yüksek hızda adım kaçırmamak için SpreadCycle (en_spreadcycle=1) önerilir
-    uint32_t gconf = 0x00;
-    if (!config.stealthchop) {
-        gconf |= (1 << 2); // en_SpreadCycle aktif
-    }
-    gconf |= (1 << 7);     // mstep_reg_select: microstep CHOPCONF'tan alınsın
-    writeTMC2209Register(uart_pin, 0x00, gconf);
+    // 2. Mod Yapılandırması (GCONF: 0x00 ve TPWMTHRS: 0x13)
+    setDriverMode(config.motor_id, config.mode);
 
     // 3. CHOPCONF: Reg 0x6C (Microstep MRES & Enterpolasyon)
     uint8_t mres = getMicrostepMRES(config.microsteps);
@@ -117,6 +166,9 @@ bool TMCDriverManager::configureDriver(const TMCDriverConfig& config) {
     // 4. Sensörsüz Homing Hassasiyeti (SGTHRS: Reg 0x40)
     writeTMC2209Register(uart_pin, 0x40, (uint32_t)config.stallguard_thresh);
 
+    // 5. TPOWERDOWN: Reg 0x11 (Bekleme akımına geçiş gecikmesi ~0.5s)
+    writeTMC2209Register(uart_pin, 0x11, 20);
+
     return true;
 }
 
@@ -129,25 +181,33 @@ void TMCDriverManager::applyDefaults() {
     cfg.hold_current_ma = 400;
     cfg.microsteps = 16;
     cfg.interpolate = true;
-    cfg.stealthchop = false; // Lazer ivmelerinde SpreadCycle torku
+    cfg.mode = TMC_MODE_SPREADCYCLE; // Lazer ivmelerinde ve ani yön değişimlerinde maksimum tork
+    cfg.stealthchop_threshold_speed = 0;
     cfg.stallguard_thresh = 65;
 
-    // Motor 1 (X)
+    // Motor 0 (X) - SpreadCycle
     cfg.motor_id = 0;
     configureDriver(cfg);
 
-    // Motor 2 (Y1)
+    // Motor 1 (Y1) - SpreadCycle
     cfg.motor_id = 1;
     cfg.run_current_ma = 900;
+    cfg.hold_current_ma = 450;
+    cfg.stallguard_thresh = 70;
     configureDriver(cfg);
 
-    // Motor 3 (Y2 - Dual-Y)
+    // Motor 2 (Y2 - Dual-Y) - SpreadCycle
     cfg.motor_id = 2;
     cfg.run_current_ma = 900;
+    cfg.hold_current_ma = 450;
+    cfg.stallguard_thresh = 70;
     configureDriver(cfg);
 
-    // Motor 4 (Z)
+    // Motor 3 (Z - Yatak/Odak) - Sessizlik için StealthChop
     cfg.motor_id = 3;
     cfg.run_current_ma = 600;
+    cfg.hold_current_ma = 300;
+    cfg.mode = TMC_MODE_STEALTHCHOP;
+    cfg.stallguard_thresh = 0;
     configureDriver(cfg);
 }

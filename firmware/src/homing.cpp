@@ -69,7 +69,9 @@ void HomingManager::homeX() {
     if (x_mode == HOMING_SENSORLESS) {
         // --- 1. SENSÖRSÜZ HOMING (TMC2209 StallGuard) ---
         // Şaseye sert çarpmayı önlemek için akımı homing seviyesine düşür
-        TMCDriverConfig cfg;
+        TMCDriverConfig original_cfg = TMCDriverManager::active_configs[0];
+
+        TMCDriverConfig cfg = original_cfg;
         cfg.motor_id = 0;
         cfg.driver_type = TMC_TYPE_2209;
         cfg.sense_resistor = 0.110f;
@@ -77,7 +79,7 @@ void HomingManager::homeX() {
         cfg.hold_current_ma = x_homing_current / 2;
         cfg.microsteps = 16;
         cfg.interpolate = true;
-        cfg.stealthchop = false; // StallGuard sadece SpreadCycle modunda çalışır!
+        cfg.mode = TMC_MODE_SPREADCYCLE; // StallGuard sadece SpreadCycle modunda çalışır!
         cfg.stallguard_thresh = x_sgthrs;
         TMCDriverManager::configureDriver(cfg);
 
@@ -106,10 +108,8 @@ void HomingManager::homeX() {
         }
         delay(100);
 
-        // Normal çalışma akımını geri yükle
-        cfg.run_current_ma = x_run_current;
-        cfg.hold_current_ma = x_run_current / 2;
-        TMCDriverManager::configureDriver(cfg);
+        // Normal çalışma akımını ve modunu geri yükle
+        TMCDriverManager::configureDriver(original_cfg);
 
     } else {
         // --- 2. MEKANİK LİMİT SWITCH HOMING ---
@@ -155,20 +155,32 @@ void HomingManager::homeDualY() {
 
     if (y_mode == HOMING_SENSORLESS) {
         // --- DUAL-Y SENSÖRSÜZ HOMING ---
-        TMCDriverConfig cfg;
-        cfg.driver_type = TMC_TYPE_2209;
-        cfg.sense_resistor = 0.110f;
-        cfg.run_current_ma = y_homing_current;
-        cfg.hold_current_ma = y_homing_current / 2;
-        cfg.microsteps = 16;
-        cfg.interpolate = true;
-        cfg.stealthchop = false;
-        cfg.stallguard_thresh = y_sgthrs;
+        TMCDriverConfig orig_y1 = TMCDriverManager::active_configs[1];
+        TMCDriverConfig orig_y2 = TMCDriverManager::active_configs[2];
 
-        cfg.motor_id = 1; // Y1
-        TMCDriverManager::configureDriver(cfg);
-        cfg.motor_id = 2; // Y2
-        TMCDriverManager::configureDriver(cfg);
+        TMCDriverConfig cfg1 = orig_y1;
+        cfg1.motor_id = 1;
+        cfg1.driver_type = TMC_TYPE_2209;
+        cfg1.sense_resistor = 0.110f;
+        cfg1.run_current_ma = y_homing_current;
+        cfg1.hold_current_ma = y_homing_current / 2;
+        cfg1.microsteps = 16;
+        cfg1.interpolate = true;
+        cfg1.mode = TMC_MODE_SPREADCYCLE;
+        cfg1.stallguard_thresh = y_sgthrs;
+        TMCDriverManager::configureDriver(cfg1);
+
+        TMCDriverConfig cfg2 = orig_y2;
+        cfg2.motor_id = 2;
+        cfg2.driver_type = TMC_TYPE_2209;
+        cfg2.sense_resistor = 0.110f;
+        cfg2.run_current_ma = y_homing_current;
+        cfg2.hold_current_ma = y_homing_current / 2;
+        cfg2.microsteps = 16;
+        cfg2.interpolate = true;
+        cfg2.mode = TMC_MODE_SPREADCYCLE;
+        cfg2.stallguard_thresh = y_sgthrs;
+        TMCDriverManager::configureDriver(cfg2);
 
         delay(200);
 
@@ -205,11 +217,9 @@ void HomingManager::homeDualY() {
         }
         delay(100);
 
-        // Normal çalışma akımını geri yükle
-        cfg.run_current_ma = y_run_current;
-        cfg.hold_current_ma = y_run_current / 2;
-        cfg.motor_id = 1; TMCDriverManager::configureDriver(cfg);
-        cfg.motor_id = 2; TMCDriverManager::configureDriver(cfg);
+        // Normal çalışma akımını ve modunu geri yükle
+        TMCDriverManager::configureDriver(orig_y1);
+        TMCDriverManager::configureDriver(orig_y2);
 
     } else {
         // --- DUAL-Y MEKANİK ÇİFT SWITCH AUTO-SQUARING ---

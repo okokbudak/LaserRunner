@@ -7,6 +7,7 @@
 #include "aux_io.h"
 #include "sensors.h"
 #include "homing.h"
+#include "tmc_control.h"
 
 // Paket Ayrıştırma Durum Makinesi
 enum ParseState {
@@ -141,6 +142,25 @@ void dispatch_command(uint8_t opcode, const uint8_t* payload, uint8_t len, uint8
             break;
         }
 
+        case CMD_CONFIG_TMC: {
+            if (len >= 11) {
+                TMCDriverConfig cfg;
+                cfg.motor_id = payload[0];
+                cfg.driver_type = TMC_TYPE_2209;
+                cfg.sense_resistor = 0.110f;
+                cfg.mode = (TMCMode)payload[1];
+                cfg.run_current_ma = (payload[2] << 8) | payload[3];
+                cfg.hold_current_ma = (payload[4] << 8) | payload[5];
+                cfg.microsteps = (payload[6] << 8) | payload[7];
+                cfg.interpolate = (payload[8] != 0);
+                cfg.stealthchop_threshold_speed = (payload[9] << 8) | payload[10];
+                cfg.stallguard_thresh = (len >= 12) ? payload[11] : 65;
+                TMCDriverManager::configureDriver(cfg);
+                send_ack(seq_id);
+            }
+            break;
+        }
+
         case CMD_QUEUE_MOTION: {
             if (len == sizeof(MotionBlockPayload)) {
                 if (estop_triggered) {
@@ -219,6 +239,7 @@ void setup() {
     StepQueue::init();
     StepTimer::init();
     HomingManager::init();
+    TMCDriverManager::init();
 
     last_packet_time_ms = millis();
 }

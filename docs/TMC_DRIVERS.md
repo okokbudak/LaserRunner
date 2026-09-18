@@ -4,17 +4,56 @@ Bu kılavuz; BigTreeTech Octopus Pro V1.0.1 kartı üzerinde **TMC2209**, **TMC5
 
 ---
 
-## 1. Lazer Kesim/Kazıma İçin En Kritik Ayar: StealthChop vs SpreadCycle
+## 1. TMC Çalışma Modları: StealthChop vs SpreadCycle vs Hybrid
 
-3D yazıcılarda motor sesini tamamen kesmek için **StealthChop** tercih edilir. Ancak **yüksek hızlı diyot lazer makinelerinde (100 - 300 mm/s hız ve 3000 - 5000 mm/s² ivmelerde) StealthChop kullanılmamalıdır!**
+LaserRunner, Klipper tarzı modüler yapılandırma ile her motor için 3 farklı Trinamic çalışma modunu destekler:
 
-### Neden SpreadCycle?
-* **Ani Yön Değişimleri:** Lazer tarama (raster engraving) yaparken kafa her satır sonunda anında yön değiştirir. StealthChop'un dinamik akım algoritması bu ani yön değişimlerinde gecikerek **adım kaçırmaya (layer shift / satır kayması)** neden olur.
-* **Maksimum Tork:** `SpreadCycle`, motorun her adımda maksimum tork üretmesini sağlar.
-* **Konfigürasyon Kuralı:** `laserrunner.cfg` dosyasında X ve Y eksenleri için:
-  ```ini
-  stealthchop_threshold: 0  ; 0 = Daima SpreadCycle (Lazer için altın kural)
-  ```
+| Mod | `mode` Ayarı | `stealthchop_threshold` | Ses Seviyesi | Dinamik Tork | Önerilen Eksen |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **SpreadCycle** | `mode: spreadcycle` | `0` | Duyulabilir (kıyıcı sesi) | **Maksimum** (Sıfır satır kayması) | **X, Y, Y1 (Lazer Kazıma/Kesim)** |
+| **StealthChop** | `mode: stealthchop` | `999999` | **Fısıltı Sessizliğinde** | Düşük/Orta (ani ivmelerde gecikmeli) | **Z (Odaklama/Yatak Tablası)** |
+| **Dinamik Hybrid** | `mode: hybrid` | `örn: 60` (mm/s) | Gezinmede sessiz, hızda torklu | Hıza bağlı otomatik geçiş | Jog / Gezinme / Hafif CNC |
+
+### Neden X ve Y Eksenlerinde Daima SpreadCycle?
+* **Ani Yön Değişimleri (Raster Engraving):** Lazer kazıma yaparken kafa 200 - 400 mm/s hızla satır sonuna gelir ve 3000 - 10000 mm/s² ivmeyle anında zıt yöne döner. StealthChop'un PWM gerilim döngüsü bu ani yön değişimlerinde bobin akımını yeterince hızlı ayarlayamaz ve **adım kaçırma (layer shift / satır kayması)** meydana gelir.
+* **Maksimum Tork:** `SpreadCycle`, sabit off-time akım kıyıcı mimarisi sayesinde her adım darbesinde motor bobinlerine anında tam manyetik alan uygular.
+* **StallGuard Zorunluluğu:** TMC2209'un sensörsüz homing (Back-EMF algılama) donanımı olan StallGuard4 **sadece SpreadCycle modunda** çalışabilir.
+
+### `laserrunner.cfg` Örnek Konfigürasyonu:
+```ini
+# X Ekseni: Lazer kesim torku için SpreadCycle
+[tmc2209 stepper_x]
+uart_pin: PC4
+mode: spreadcycle              ; spreadcycle | stealthchop | hybrid
+run_current: 0.800             ; RMS Akım (0.8A)
+hold_current: 0.400            ; Bekleme Akımı (0.4A)
+microsteps: 16
+interpolate: True              ; Donanımsal 256 mikro-adım enterpolasyonu
+stealthchop_threshold: 0       ; 0 = SpreadCycle
+diag_pin: PG6
+driver_SGTHRS: 65              ; Sensörsüz homing hassasiyeti
+
+# Z Ekseni: Yatak tablasında sessizlik için StealthChop
+[tmc2209 stepper_z]
+uart_pin: PC7
+mode: stealthchop              ; Fısıltı sessizliğinde
+run_current: 0.600
+hold_current: 0.300
+microsteps: 16
+interpolate: True
+stealthchop_threshold: 999999
+```
+
+### Firmware ve Register Seviyesinde Çalışma Mantığı:
+1. **GCONF (Register 0x00):**
+   - Bit 2 (`en_SpreadCycle`): `1` olduğunda SpreadCycle aktif edilir, `0` olduğunda StealthChop PWM aktif olur.
+   - Bit 7 (`mstep_reg_select`): Daima `1` yapılır, böylece mikro-adım oranları CHOPCONF register'ından okunur.
+2. **TPWMTHRS (Register 0x13):**
+   - Hibrit modda belirlenen hız eşiği (`stealthchop_threshold_speed`) adım frekansına dönüştürülür:
+     $$TPWMTHRS = \frac{f_{clk}}{v \cdot \text{steps\_per\_mm}} = \frac{12\,000\,000}{\text{hız} \cdot 80}$$
+   - Motor hızı eşiğin altındayken StealthChop devrededir; hızı aşınca sürücü otomatik olarak sıfır gecikmeyle SpreadCycle torkuna geçer.
+3. **Sensörsüz Homing Güvenliği:**
+   - Eğer kullanıcı X veya Y için `mode: stealthchop` veya `mode: hybrid` seçmiş olsa bile, LaserRunner firmware'i homing başladığı anda geçici olarak motoru `SpreadCycle` moduna alır, StallGuard homing'ini tamamlar, 5mm geri çekilir (retract) ve kullanıcının orijinal modunu geri yükler!
 
 ---
 
@@ -26,7 +65,7 @@ TMC sürücülerinin yazılımdan kontrol edilebilmesi için Octopus Pro yuvalar
           [ MOTOR YUVASI ]
    +------------------------------+
    |  [ ] [ ] [ ] [ ]             |  <-- Standart Microstep Jumperları (BOŞ BIRAKIN)
-   |  [■]                          |  <-- UART Jumperı (SADECE SOLDAKİ 1 ÇİFTİ KÖPRÜLEYİN)
+   |  [■]                         |  <-- UART Jumperı (SADECE SOLDAKİ 1 ÇİFTİ KÖPRÜLEYİN)
    +------------------------------+
 ```
 * **TMC2209:** Sürücü yuvasının altındaki 4 jumper sırasından **sadece en soldaki çifti** (kırmızı jumper) takın. Diğerlerini boş bırakın.

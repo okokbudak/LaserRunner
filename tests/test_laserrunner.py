@@ -140,6 +140,20 @@ class TestLaserRunner(unittest.TestCase):
         self.assertIn("stepper_x", tmc)
         self.assertEqual(tmc["stepper_x"]["run_current"], 0.800)
         self.assertEqual(tmc["stepper_x"]["sgthrs"], 65)
+        self.assertEqual(tmc["stepper_x"]["mode"], "spreadcycle")
+        self.assertEqual(tmc["stepper_x"]["mode_code"], 0)
+
+        self.assertIn("stepper_z", tmc)
+        self.assertEqual(tmc["stepper_z"]["mode"], "stealthchop")
+        self.assertEqual(tmc["stepper_z"]["mode_code"], 1)
+
+    def test_tmc_packet_encoding(self):
+        # Motor 0 (X), SpreadCycle (0), 800mA, 400mA, 16 microsteps, interpolate, 0 thresh, 65 sgthrs
+        frame = self.codec.encode_config_tmc(0, 0, 800, 400, 16, True, 0, 65)
+        self.assertEqual(frame[4], 0x0A) # CMD_CONFIG_TMC
+        self.assertEqual(frame[2], 12)   # 12 bytes payload
+        self.assertEqual(frame[5], 0)    # motor_id 0
+        self.assertEqual(frame[6], 0)    # mode SpreadCycle
 
 if __name__ == "__main__":
     unittest.main()

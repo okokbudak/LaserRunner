@@ -48,14 +48,33 @@ class ConfigManager:
             if section.startswith("tmc2209 ") or section.startswith("tmc5160 "):
                 driver_type, stepper_name = section.split(" ", 1)
                 sec = self.parser[section]
+
+                # Çalışma modu: 'spreadcycle', 'stealthchop', veya 'hybrid'
+                # Klipper tarzı stealthchop_threshold ile de tam uyumlu:
+                # 0 = spreadcycle, 999999 = stealthchop, >0 = hybrid
+                mode_str = sec.get("mode", "").strip().lower()
+                stealth_thresh = int(sec.get("stealthchop_threshold", "0"))
+
+                if mode_str == "stealthchop" or stealth_thresh >= 999999:
+                    mode_val = 1  # TMC_MODE_STEALTHCHOP
+                    mode_name = "stealthchop"
+                elif mode_str == "hybrid" or (stealth_thresh > 0 and stealth_thresh < 999999):
+                    mode_val = 2  # TMC_MODE_HYBRID
+                    mode_name = "hybrid"
+                else:
+                    mode_val = 0  # TMC_MODE_SPREADCYCLE (Lazer için altın standart)
+                    mode_name = "spreadcycle"
+
                 tmc_configs[stepper_name] = {
                     "type": driver_type,
                     "uart_pin": sec.get("uart_pin", ""),
+                    "mode": mode_name,
+                    "mode_code": mode_val,
                     "run_current": float(sec.get("run_current", "0.800")),
                     "hold_current": float(sec.get("hold_current", "0.400")),
                     "microsteps": int(sec.get("microsteps", "16")),
                     "interpolate": sec.getboolean("interpolate", True),
-                    "stealthchop": (int(sec.get("stealthchop_threshold", "0")) > 0),
+                    "stealthchop_threshold": stealth_thresh,
                     "sgthrs": int(sec.get("driver_sgthrs", "65")),
                     "sense_resistor": float(sec.get("sense_resistor", "0.110"))
                 }

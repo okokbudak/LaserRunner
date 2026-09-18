@@ -84,6 +84,34 @@ class ProtocolCodec:
         """bit 0: X, bit 1: Dual-Y (Auto Squaring), bit 2: Z"""
         return self.encode_frame(CMD_START_HOMING, bytes([axis_mask]))
 
+    def encode_config_tmc(
+        self,
+        motor_id: int,
+        mode: int,
+        run_current_ma: int,
+        hold_current_ma: int,
+        microsteps: int,
+        interpolate: bool,
+        stealthchop_threshold_speed: int = 0,
+        sg_thresh: int = 65
+    ) -> bytes:
+        """
+        TMC sürücü çalışma modunu (SpreadCycle/StealthChop/Hybrid), akım ve StallGuard ayarlarını kodlar.
+        mode: 0 = SpreadCycle (Maksimum tork), 1 = StealthChop (Sessiz), 2 = Hybrid
+        """
+        payload = struct.pack(
+            ">BBHHHBHB",
+            motor_id,
+            mode,
+            int(run_current_ma),
+            int(hold_current_ma),
+            int(microsteps),
+            1 if interpolate else 0,
+            int(stealthchop_threshold_speed),
+            int(sg_thresh)
+        )
+        return self.encode_frame(CMD_CONFIG_TMC, payload)
+
     def encode_motion_block(
         self,
         total_steps: int,
