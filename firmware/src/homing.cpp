@@ -1,18 +1,53 @@
 #include "homing.h"
 #include "step_timer.h"
 #include "sensors.h"
+#include "tmc_control.h"
+
+HomingMode HomingManager::x_mode = HOMING_SENSORLESS;
+HomingMode HomingManager::y_mode = HOMING_SENSORLESS;
+HomingMode HomingManager::z_mode = HOMING_MECHANICAL;
+
+uint16_t HomingManager::x_homing_current = 500;
+uint16_t HomingManager::x_run_current = 800;
+uint8_t  HomingManager::x_sgthrs = 65;
+
+uint16_t HomingManager::y_homing_current = 600;
+uint16_t HomingManager::y_run_current = 900;
+uint8_t  HomingManager::y_sgthrs = 70;
 
 void HomingManager::init() {
-    // Endstoplar SafetySensors::init() içinde yapılandırılır
+    // DIAG ve limit pinleri SafetySensors::init() içinde INPUT_PULLUP yapılır
+}
+
+void HomingManager::configureHoming(
+    uint8_t axis,
+    HomingMode mode,
+    uint16_t homing_current_ma,
+    uint16_t run_current_ma,
+    uint8_t sg_threshold
+) {
+    if (axis == 0) {
+        x_mode = mode;
+        x_homing_current = homing_current_ma;
+        x_run_current = run_current_ma;
+        x_sgthrs = sg_threshold;
+    } else if (axis == 1 || axis == 2) {
+        y_mode = mode;
+        y_homing_current = homing_current_ma;
+        y_run_current = run_current_ma;
+        y_sgthrs = sg_threshold;
+    } else if (axis == 3) {
+        z_mode = mode;
+    }
 }
 
 bool HomingManager::runHoming(uint8_t axis_mask) {
-    // 1. Z Ekseni (Varsa güvenlik için önce Z kaldırılabilir)
+    // 1. Z Ekseni (Varsa güvenlik için)
     if (axis_mask & 0x04) {
         homeZ();
     }
 
-    // 2. Y Ekseni (Dual-Y Auto-Squaring Bağımsız Hizalama)
+    // 2. Y Ekseni (Dual-Y Auto-Squaring / Sensörsüz veya Mekanik)
     if (axis_mask & 0x02) {
         homeDualY();
     }
@@ -25,104 +60,211 @@ bool HomingManager::runHoming(uint8_t axis_mask) {
     return true;
 }
 
+// ==============================================================================
+// X EKSENİ HOMING (KLIPPER TARZI SENSÖRSÜZ STALLGUARD VEYA MEKANİK SWITCH)
+// ==============================================================================
 void HomingManager::homeX() {
-    // Yönü X- e ayarla (0x00)
-    digitalWrite(PIN_X_DIR, LOW);
     digitalWrite(PIN_X_ENABLE, LOW); // Motor aktif
 
-    // Switch'e doğru hızlı yaklaşım
-    uint32_t max_steps = 100000;
-    while (digitalRead(PIN_X_DIAG) == HIGH && max_steps--) {
-        digitalWrite(PIN_X_STEP, HIGH);
-        delayMicroseconds(2);
-        digitalWrite(PIN_X_STEP, LOW);
-        delayMicroseconds(100); // Hızlı arama hızı
-    }
+    if (x_mode == HOMING_SENSORLESS) {
+        // --- 1. SENSÖRSÜZ HOMING (TMC2209 StallGuard) ---
+        // Şaseye sert çarpmayı önlemek için akımı homing seviyesine düşür
+        TMCDriverConfig cfg;
+        cfg.motor_id = 0;
+        cfg.driver_type = TMC_TYPE_2209;
+        cfg.sense_resistor = 0.110f;
+        cfg.run_current_ma = x_homing_current;
+        cfg.hold_current_ma = x_homing_current / 2;
+        cfg.microsteps = 16;
+        cfg.interpolate = true;
+        cfg.stealthchop = false; // StallGuard sadece SpreadCycle modunda çalışır!
+        cfg.stallguard_thresh = x_sgthrs;
+        TMCDriverManager::configureDriver(cfg);
 
-    // 3mm geri çekil (Bounce back)
-    digitalWrite(PIN_X_DIR, HIGH);
-    for (int i = 0; i < 240; i++) { // ~3mm (80 step/mm)
-        digitalWrite(PIN_X_STEP, HIGH);
-        delayMicroseconds(2);
-        digitalWrite(PIN_X_STEP, LOW);
-        delayMicroseconds(200);
-    }
-    delay(50);
+        // Sürücünün Stall bayrağını temizlemesi için bekleme (Klipper kuralı)
+        delay(200);
 
-    // Yavaş hassas dokunuş
-    digitalWrite(PIN_X_DIR, LOW);
-    max_steps = 2000;
-    while (digitalRead(PIN_X_DIAG) == HIGH && max_steps--) {
-        digitalWrite(PIN_X_STEP, HIGH);
-        delayMicroseconds(2);
-        digitalWrite(PIN_X_STEP, LOW);
-        delayMicroseconds(300); // Yavaş hassas dokunuş
+        // X- yönünde sabit hızda arama hareketi (~40 mm/s)
+        digitalWrite(PIN_X_DIR, LOW);
+        uint32_t max_steps = 100000;
+        
+        // TMC2209 DIAG pini çarpma (stall) anında HIGH olur!
+        while (digitalRead(PIN_X_DIAG) == LOW && max_steps--) {
+            digitalWrite(PIN_X_STEP, HIGH);
+            delayMicroseconds(2);
+            digitalWrite(PIN_X_STEP, LOW);
+            delayMicroseconds(160); // Sabit 40 mm/s hız
+        }
+
+        // Çarpma algılandı! Motoru gevşetmek için 5mm geri çek (Retract)
+        digitalWrite(PIN_X_DIR, HIGH);
+        for (int i = 0; i < 400; i++) { // 5mm (80 step/mm)
+            digitalWrite(PIN_X_STEP, HIGH);
+            delayMicroseconds(2);
+            digitalWrite(PIN_X_STEP, LOW);
+            delayMicroseconds(200);
+        }
+        delay(100);
+
+        // Normal çalışma akımını geri yükle
+        cfg.run_current_ma = x_run_current;
+        cfg.hold_current_ma = x_run_current / 2;
+        TMCDriverManager::configureDriver(cfg);
+
+    } else {
+        // --- 2. MEKANİK LİMİT SWITCH HOMING ---
+        digitalWrite(PIN_X_DIR, LOW);
+        uint32_t max_steps = 100000;
+        while (digitalRead(PIN_X_DIAG) == HIGH && max_steps--) {
+            digitalWrite(PIN_X_STEP, HIGH);
+            delayMicroseconds(2);
+            digitalWrite(PIN_X_STEP, LOW);
+            delayMicroseconds(100);
+        }
+
+        // 3mm geri çekil
+        digitalWrite(PIN_X_DIR, HIGH);
+        for (int i = 0; i < 240; i++) {
+            digitalWrite(PIN_X_STEP, HIGH);
+            delayMicroseconds(2);
+            digitalWrite(PIN_X_STEP, LOW);
+            delayMicroseconds(200);
+        }
+        delay(50);
+
+        // Hassas dokunuş
+        digitalWrite(PIN_X_DIR, LOW);
+        max_steps = 2000;
+        while (digitalRead(PIN_X_DIAG) == HIGH && max_steps--) {
+            digitalWrite(PIN_X_STEP, HIGH);
+            delayMicroseconds(2);
+            digitalWrite(PIN_X_STEP, LOW);
+            delayMicroseconds(300);
+        }
     }
 
     StepTimer::current_pos_x = 0;
 }
 
+// ==============================================================================
+// DUAL-Y HOMING & AUTO-SQUARING (SENSÖRSÜZ VEYA ÇİFT SWITCH)
+// ==============================================================================
 void HomingManager::homeDualY() {
-    // Dual-Y Auto-Squaring: İki motor bağımsız sürülür
-    digitalWrite(PIN_Y1_DIR, LOW);
-    digitalWrite(PIN_Y2_DIR, LOW);
     digitalWrite(PIN_Y1_ENABLE, LOW);
     digitalWrite(PIN_Y2_ENABLE, LOW);
 
-    bool y1_hit = false;
-    bool y2_hit = false;
-    uint32_t max_steps = 100000;
+    if (y_mode == HOMING_SENSORLESS) {
+        // --- DUAL-Y SENSÖRSÜZ HOMING ---
+        TMCDriverConfig cfg;
+        cfg.driver_type = TMC_TYPE_2209;
+        cfg.sense_resistor = 0.110f;
+        cfg.run_current_ma = y_homing_current;
+        cfg.hold_current_ma = y_homing_current / 2;
+        cfg.microsteps = 16;
+        cfg.interpolate = true;
+        cfg.stealthchop = false;
+        cfg.stallguard_thresh = y_sgthrs;
 
-    // Her iki switch de tetiklenene kadar adım at
-    while ((!y1_hit || !y2_hit) && max_steps--) {
-        if (digitalRead(PIN_Y1_DIAG) == LOW) {
-            y1_hit = true;
+        cfg.motor_id = 1; // Y1
+        TMCDriverManager::configureDriver(cfg);
+        cfg.motor_id = 2; // Y2
+        TMCDriverManager::configureDriver(cfg);
+
+        delay(200);
+
+        digitalWrite(PIN_Y1_DIR, LOW);
+        digitalWrite(PIN_Y2_DIR, LOW);
+
+        bool y1_hit = false;
+        bool y2_hit = false;
+        uint32_t max_steps = 100000;
+
+        // Her iki motorun DIAG pini HIGH olana kadar bağımsız adım at (Auto-Squaring)
+        while ((!y1_hit || !y2_hit) && max_steps--) {
+            if (digitalRead(PIN_Y1_DIAG) == HIGH) y1_hit = true;
+            if (digitalRead(PIN_Y2_DIAG) == HIGH) y2_hit = true;
+
+            if (!y1_hit) digitalWrite(PIN_Y1_STEP, HIGH);
+            if (!y2_hit) digitalWrite(PIN_Y2_STEP, HIGH);
+            delayMicroseconds(2);
+            digitalWrite(PIN_Y1_STEP, LOW);
+            digitalWrite(PIN_Y2_STEP, LOW);
+            delayMicroseconds(160);
         }
-        if (digitalRead(PIN_Y2_DIAG) == LOW) {
-            y2_hit = true;
+
+        // 5mm geri çekil
+        digitalWrite(PIN_Y1_DIR, HIGH);
+        digitalWrite(PIN_Y2_DIR, HIGH);
+        for (int i = 0; i < 400; i++) {
+            digitalWrite(PIN_Y1_STEP, HIGH);
+            digitalWrite(PIN_Y2_STEP, HIGH);
+            delayMicroseconds(2);
+            digitalWrite(PIN_Y1_STEP, LOW);
+            digitalWrite(PIN_Y2_STEP, LOW);
+            delayMicroseconds(200);
+        }
+        delay(100);
+
+        // Normal çalışma akımını geri yükle
+        cfg.run_current_ma = y_run_current;
+        cfg.hold_current_ma = y_run_current / 2;
+        cfg.motor_id = 1; TMCDriverManager::configureDriver(cfg);
+        cfg.motor_id = 2; TMCDriverManager::configureDriver(cfg);
+
+    } else {
+        // --- DUAL-Y MEKANİK ÇİFT SWITCH AUTO-SQUARING ---
+        digitalWrite(PIN_Y1_DIR, LOW);
+        digitalWrite(PIN_Y2_DIR, LOW);
+
+        bool y1_hit = false;
+        bool y2_hit = false;
+        uint32_t max_steps = 100000;
+
+        while ((!y1_hit || !y2_hit) && max_steps--) {
+            if (digitalRead(PIN_Y1_DIAG) == LOW) y1_hit = true;
+            if (digitalRead(PIN_Y2_DIAG) == LOW) y2_hit = true;
+
+            if (!y1_hit) digitalWrite(PIN_Y1_STEP, HIGH);
+            if (!y2_hit) digitalWrite(PIN_Y2_STEP, HIGH);
+            delayMicroseconds(2);
+            digitalWrite(PIN_Y1_STEP, LOW);
+            digitalWrite(PIN_Y2_STEP, LOW);
+            delayMicroseconds(120);
         }
 
-        if (!y1_hit) digitalWrite(PIN_Y1_STEP, HIGH);
-        if (!y2_hit) digitalWrite(PIN_Y2_STEP, HIGH);
-        delayMicroseconds(2);
-        digitalWrite(PIN_Y1_STEP, LOW);
-        digitalWrite(PIN_Y2_STEP, LOW);
-        delayMicroseconds(120);
+        // 3mm geri çekil
+        digitalWrite(PIN_Y1_DIR, HIGH);
+        digitalWrite(PIN_Y2_DIR, HIGH);
+        for (int i = 0; i < 240; i++) {
+            digitalWrite(PIN_Y1_STEP, HIGH);
+            digitalWrite(PIN_Y2_STEP, HIGH);
+            delayMicroseconds(2);
+            digitalWrite(PIN_Y1_STEP, LOW);
+            digitalWrite(PIN_Y2_STEP, LOW);
+            delayMicroseconds(200);
+        }
+        delay(50);
+
+        // Hassas dokunuş
+        digitalWrite(PIN_Y1_DIR, LOW);
+        digitalWrite(PIN_Y2_DIR, LOW);
+        y1_hit = false;
+        y2_hit = false;
+        max_steps = 2000;
+
+        while ((!y1_hit || !y2_hit) && max_steps--) {
+            if (digitalRead(PIN_Y1_DIAG) == LOW) y1_hit = true;
+            if (digitalRead(PIN_Y2_DIAG) == LOW) y2_hit = true;
+
+            if (!y1_hit) digitalWrite(PIN_Y1_STEP, HIGH);
+            if (!y2_hit) digitalWrite(PIN_Y2_STEP, HIGH);
+            delayMicroseconds(2);
+            digitalWrite(PIN_Y1_STEP, LOW);
+            digitalWrite(PIN_Y2_STEP, LOW);
+            delayMicroseconds(350);
+        }
     }
 
-    // 3mm geri çekil (Her iki motor eşit geri çekilir)
-    digitalWrite(PIN_Y1_DIR, HIGH);
-    digitalWrite(PIN_Y2_DIR, HIGH);
-    for (int i = 0; i < 240; i++) {
-        digitalWrite(PIN_Y1_STEP, HIGH);
-        digitalWrite(PIN_Y2_STEP, HIGH);
-        delayMicroseconds(2);
-        digitalWrite(PIN_Y1_STEP, LOW);
-        digitalWrite(PIN_Y2_STEP, LOW);
-        delayMicroseconds(200);
-    }
-    delay(50);
-
-    // Yavaş hassas gönyeleme dokunuşu
-    digitalWrite(PIN_Y1_DIR, LOW);
-    digitalWrite(PIN_Y2_DIR, LOW);
-    y1_hit = false;
-    y2_hit = false;
-    max_steps = 2000;
-
-    while ((!y1_hit || !y2_hit) && max_steps--) {
-        if (digitalRead(PIN_Y1_DIAG) == LOW) y1_hit = true;
-        if (digitalRead(PIN_Y2_DIAG) == LOW) y2_hit = true;
-
-        if (!y1_hit) digitalWrite(PIN_Y1_STEP, HIGH);
-        if (!y2_hit) digitalWrite(PIN_Y2_STEP, HIGH);
-        delayMicroseconds(2);
-        digitalWrite(PIN_Y1_STEP, LOW);
-        digitalWrite(PIN_Y2_STEP, LOW);
-        delayMicroseconds(350);
-    }
-
-    // Köprü artık lazer yatağına tam 90 derece dik hizalandı!
     StepTimer::current_pos_y = 0;
 }
 
