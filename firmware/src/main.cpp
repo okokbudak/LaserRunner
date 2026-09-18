@@ -223,14 +223,14 @@ void dispatch_command(uint8_t opcode, const uint8_t* payload, uint8_t len, uint8
                     return;
                 }
 
-                // Kapak açıksa lazeri kilitle
-                if (SafetySensors::isLidOpen()) {
-                    send_error(ERR_LID_OPEN, 0);
-                    return;
-                }
-
                 MotionBlockPayload block;
                 memcpy(&block, payload, sizeof(MotionBlockPayload));
+
+                // Kapak açıksa lazer ateşlemeyi kapat, fakat motor hareketine izin ver
+                if (SafetySensors::isLidOpen()) {
+                    block.laser_power_start = 0;
+                    block.laser_power_end = 0;
+                }
 
                 if (StepQueue::push(block)) {
                     send_ack(seq_id);

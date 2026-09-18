@@ -56,7 +56,7 @@
 
 // --- 4. Güvenlik, Sensörler ve Korumalar ---
 #define PIN_ESTOP            PC0      // Acil Durdurma Butonu (Normalde Kapalı / Açık)
-#define PIN_LID_SAFETY       PG11     // Lazer Kabin Kapağı Güvenlik Switchi (Kapak açılınca lazer durur)
+#define PIN_LID_SAFETY       PG12     // Lazer Kabin Kapağı Güvenlik Switchi (Kapak açılınca lazer durur)
 #define PIN_FLAME_SENSOR     PC2      // Optik Alev / Yangın Dedektörü
 #define PIN_DIODE_TEMP       PF3      // Lazer Kafası NTC100K Sıcaklık Sensörü (ADC3_IN9)
 #define PIN_WATER_FLOW       PG15     // Su Soğutma / Akış Sensörü
