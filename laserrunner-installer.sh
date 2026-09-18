@@ -154,8 +154,14 @@ install_laserrunner() {
     sudo -u "$TARGET_USER" "$VENV_DIR/bin/pip" install --upgrade pip
     sudo -u "$TARGET_USER" "$VENV_DIR/bin/pip" install pyserial fastapi uvicorn websockets pillow numpy
 
-    # 6. Systemd Servisini Yapılandır ve Başlat
-    echo -e "${CLR_YELLOW}[6/6] Systemd otomatik başlatma servisi kuruluyor...${CLR_RESET}"
+    # 7. C-Helper (Yüksek Hızlı CoreXY Adım Sıkıştırıcı) Derle
+    echo -e "${CLR_YELLOW}[7/7] Yüksek hızlı C-Helper motoru derleniyor (gcc -O3)...${CLR_RESET}"
+    if [ -f "$INSTALL_DIR/host/laserrunner/chelper/step_compressor.c" ]; then
+        sudo -u "$TARGET_USER" gcc -O3 -fPIC -shared -o "$INSTALL_DIR/host/laserrunner/chelper/libchelper.so" "$INSTALL_DIR/host/laserrunner/chelper/step_compressor.c" -lm 2>/dev/null && echo -e "${CLR_GREEN}C-Helper derlendi (CoreXY yüksek hız modu aktif).${CLR_RESET}" || echo "C-Helper atlandı, saf Python modu kullanılacak."
+    fi
+
+    # Systemd Servisini Yapılandır ve Başlat
+    echo -e "${CLR_YELLOW}Systemd otomatik başlatma servisi kuruluyor...${CLR_RESET}"
     
     # Servis dosyasını dinamik olarak kullanıcının ev dizinine uyarla
     sudo bash -c "cat <<EOF > $SERVICE_FILE
