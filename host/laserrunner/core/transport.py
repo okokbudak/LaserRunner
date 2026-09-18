@@ -24,11 +24,13 @@ class SerialTransport:
 
         self.free_slots = 32
         self.running = False
+        self.last_rx_time = 0.0
         self.rx_thread: Optional[threading.Thread] = None
         self.heartbeat_thread: Optional[threading.Thread] = None
         
         self.on_status_callback: Optional[Callable[[Dict[str, Any]], None]] = None
         self.on_error_callback: Optional[Callable[[Dict[str, Any]], None]] = None
+        self.on_disconnect_callback: Optional[Callable[[], None]] = None
 
         self._lock = threading.Lock()
         self._slot_event = threading.Event()
@@ -42,6 +44,7 @@ class SerialTransport:
                 write_timeout=0.5
             )
             self.running = True
+            self.last_rx_time = time.time()
             
             # Alıcı iş parçacığını başlat
             self.rx_thread = threading.Thread(target=self._rx_worker, daemon=True)
@@ -57,17 +60,42 @@ class SerialTransport:
             print(f"[SerialTransport] Bağlantı hatası: {e}")
             return False
 
+    def _trigger_disconnect(self):
+        if not self.running:
+            return
+        self.running = False
+        if self.serial:
+            try:
+                self.serial.close()
+            except Exception:
+                pass
+            self.serial = None
+        print(f"[SerialTransport] Donanım bağlantısı kesildi / port kapandı: {self.port}")
+        if self.on_disconnect_callback:
+            try:
+                self.on_disconnect_callback()
+            except Exception as e:
+                print(f"[SerialTransport] Disconnect callback hatası: {e}")
+
     def disconnect(self):
         self.running = False
         if self.serial and self.serial.is_open:
-            self.serial.close()
+            try:
+                self.serial.close()
+            except Exception:
+                pass
+            self.serial = None
         print("[SerialTransport] Bağlantı kesildi.")
 
     def send_raw(self, data: bytes):
         with self._lock:
             if self.serial and self.serial.is_open:
-                self.serial.write(data)
-                self.serial.flush()
+                try:
+                    self.serial.write(data)
+                    self.serial.flush()
+                except (serial.SerialException, OSError, IOError) as e:
+                    print(f"[SerialTransport] Yazma hatası: {e}")
+                    self._trigger_disconnect()
 
     def send_emergency_stop(self):
         """Kuyruğa girmeden anlık 0xFF byte acil durdurma gönderir."""
@@ -124,9 +152,16 @@ class SerialTransport:
                     continue
 
                 chunk = self.serial.read(64)
-                if not chunk:
+                if chunk:
+                    self.last_rx_time = time.time()
+                    buffer.extend(chunk)
+                else:
+                    # Okuma zaman aşımı; eğer son 1.5 saniyedir hiç paket gelmediyse port koptu demektir
+                    if self.running and self.last_rx_time > 0 and (time.time() - self.last_rx_time > 1.5):
+                        print("[SerialTransport] Donanım zaman aşımı (USB kablosu çekilmiş olabilir)")
+                        self._trigger_disconnect()
+                        break
                     continue
-                buffer.extend(chunk)
 
                 # Senkronizasyon ve paket arama
                 while len(buffer) >= 7: # Min paket boyutu: Sync1, Sync2, Len, Seq, Opcode, CRC_H, CRC_L
@@ -154,6 +189,10 @@ class SerialTransport:
 
                     del buffer[:total_expected]
 
+            except (serial.SerialException, OSError, IOError) as e:
+                print(f"[SerialTransport] Seri port okuma hatası (kablo çıkarıldı): {e}")
+                self._trigger_disconnect()
+                break
             except Exception as e:
                 time.sleep(0.05)
 

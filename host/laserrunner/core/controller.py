@@ -88,6 +88,12 @@ class LaserRunnerController:
 
         # Telemetri callback'i
         self.transport.on_status_callback = self._on_telemetry
+        self.transport.on_disconnect_callback = self._on_hardware_disconnected
+
+    def _on_hardware_disconnected(self):
+        print("[Controller] Donanım bağlantısı koptu (USB çıkarıldı veya port kapandı)!")
+        self.state = MachineState.DISCONNECTED
+        self.transport.free_slots = 0
 
     def _build_kinematics(self, ktype: str, spm: Dict[str, float]) -> Kinematics:
         ktype = ktype.lower()

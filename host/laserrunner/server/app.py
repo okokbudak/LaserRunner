@@ -25,25 +25,41 @@ app.add_middleware(
 
 # Global Kontrolcü Örneği
 controller = LaserRunnerController()
+current_available_ports = []
 
 @app.on_event("startup")
 async def auto_connect_device():
-    async def try_connect_loop():
+    async def supervisor_loop():
+        global current_available_ports
         await asyncio.sleep(1.0)
-        for _ in range(10):
-            if controller.state != MachineState.DISCONNECTED:
-                break
-            ports = [p.device for p in serial.tools.list_ports.comports()]
-            for target in ["/dev/ttyACM0", "/dev/ttyUSB0"]:
-                if target in ports:
-                    try:
-                        if controller.connect(target):
-                            print(f"[AutoConnect] Successfully connected to {target}")
-                            return
-                    except Exception as e:
-                        print(f"[AutoConnect] Attempt failed: {e}")
-            await asyncio.sleep(2.0)
-    asyncio.create_task(try_connect_loop())
+        while True:
+            try:
+                # 1. Mevcut seri portları tara
+                current_available_ports = [p.device for p in serial.tools.list_ports.comports()]
+
+                # 2. Donanım takılı mı kontrol et (Kablo çekildiğinde anında düşmesi için)
+                if controller.state != MachineState.DISCONNECTED:
+                    curr_port = controller.transport.port
+                    # Linux aygıt düğümü (/dev/ttyACM0 vb.) sistemden silindiyse anında disconnect et
+                    if curr_port.startswith("/dev/") and not os.path.exists(curr_port):
+                        print(f"[Supervisor] Aygıt portu sistemden ayrıldı: {curr_port}")
+                        controller.transport._trigger_disconnect()
+
+                # 3. Bağlantı yoksa ve uygun cihaz varsa otomatik yeniden bağlan
+                if controller.state == MachineState.DISCONNECTED:
+                    for target in ["/dev/ttyACM0", "/dev/ttyUSB0", "COM3"]:
+                        if target in current_available_ports:
+                            try:
+                                if controller.connect(target):
+                                    print(f"[Supervisor] {target} algılandı ve otomatik bağlandı.")
+                                    break
+                            except Exception as e:
+                                pass
+            except Exception:
+                pass
+            await asyncio.sleep(0.5)
+
+    asyncio.create_task(supervisor_loop())
 
 # Pydantic İstek Modelleri
 class ConnectRequest(BaseModel):
@@ -267,6 +283,9 @@ async def websocket_telemetry(websocket: WebSocket):
         while True:
             telemetry = {
                 "state": controller.state,
+                "connected": (controller.state != MachineState.DISCONNECTED),
+                "port": controller.transport.port if (controller.state != MachineState.DISCONNECTED and controller.transport.serial) else "",
+                "available_ports": current_available_ports,
                 "x": round(controller.pos_x, 2),
                 "y": round(controller.pos_y, 2),
                 "z": round(controller.pos_z, 2),

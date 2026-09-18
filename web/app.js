@@ -73,6 +73,7 @@ function connectWebSocket() {
 
 function updateTelemetry(data) {
     state.machineState = data.state;
+    state.connected = (data.state !== "DISCONNECTED");
     state.pos.x = data.x;
     state.pos.y = data.y;
     state.pos.z = data.z;
@@ -81,13 +82,43 @@ function updateTelemetry(data) {
     hdrPosY.textContent = data.y.toFixed(2);
     hdrPosZ.textContent = data.z.toFixed(2);
 
-    statusText.textContent = data.state;
+    if (data.state === "DISCONNECTED") {
+        statusText.textContent = "ÇEVRİMDIŞI";
+        btnConnect.textContent = "Bağlan";
+        btnConnect.style.background = "var(--accent-cyan)";
+    } else {
+        statusText.textContent = data.state;
+        btnConnect.textContent = "Bağlantıyı Kes";
+        btnConnect.style.background = "var(--accent-red)";
+    }
+
     const indicator = statusBadge.querySelector(".status-indicator");
     indicator.className = "status-indicator";
 
     if (data.state === "IDLE") indicator.classList.add("online");
     else if (data.state === "RUNNING" || data.state === "FRAMING") indicator.classList.add("running");
     else if (data.state === "ESTOP") indicator.classList.add("estop");
+
+    // Port Listesini Dinamik Güncelle (USB takıldığında veya çıkarıldığında anında yansır)
+    if (data.available_ports && Array.isArray(data.available_ports)) {
+        const currentOptions = Array.from(portSelect.options).map(o => o.value).filter(v => v);
+        const newPorts = data.available_ports;
+        if (JSON.stringify(currentOptions) !== JSON.stringify(newPorts)) {
+            const selectedVal = portSelect.value;
+            portSelect.innerHTML = "";
+            if (newPorts.length === 0) {
+                portSelect.innerHTML = "<option value=''>Cihaz Takılı Değil</option>";
+            } else {
+                newPorts.forEach(p => {
+                    const opt = document.createElement("option");
+                    opt.value = p;
+                    opt.textContent = p;
+                    if (p === data.port || p === selectedVal) opt.selected = true;
+                    portSelect.appendChild(opt);
+                });
+            }
+        }
+    }
 
     progressBarFill.style.width = `${data.progress}%`;
     jobPercent.textContent = `${Math.round(data.progress)}%`;
