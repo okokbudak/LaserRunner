@@ -125,5 +125,21 @@ class TestLaserRunner(unittest.TestCase):
         self.assertFalse(decoded["flame_alert"])
         self.assertEqual(decoded["endstops"], 0x03)
 
+    def test_config_manager(self):
+        from laserrunner.core.config_manager import ConfigManager
+        cfg = ConfigManager()
+        mach = cfg.get_machine_config()
+        self.assertEqual(mach["kinematics"], "cartesian")
+        self.assertEqual(mach["max_acceleration"], 3000.0)
+
+        spm = cfg.get_steps_per_mm()
+        self.assertEqual(spm["x"], 80.0)
+        self.assertEqual(spm["y"], 80.0)
+
+        tmc = cfg.get_tmc_drivers()
+        self.assertIn("stepper_x", tmc)
+        self.assertEqual(tmc["stepper_x"]["run_current"], 0.800)
+        self.assertEqual(tmc["stepper_x"]["sgthrs"], 65)
+
 if __name__ == "__main__":
     unittest.main()
