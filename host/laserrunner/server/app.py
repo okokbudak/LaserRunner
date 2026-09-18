@@ -26,6 +26,25 @@ app.add_middleware(
 # Global Kontrolcü Örneği
 controller = LaserRunnerController()
 
+@app.on_event("startup")
+async def auto_connect_device():
+    async def try_connect_loop():
+        await asyncio.sleep(1.0)
+        for _ in range(10):
+            if controller.state != MachineState.DISCONNECTED:
+                break
+            ports = [p.device for p in serial.tools.list_ports.comports()]
+            for target in ["/dev/ttyACM0", "/dev/ttyUSB0"]:
+                if target in ports:
+                    try:
+                        if controller.connect(target):
+                            print(f"[AutoConnect] Successfully connected to {target}")
+                            return
+                    except Exception as e:
+                        print(f"[AutoConnect] Attempt failed: {e}")
+            await asyncio.sleep(2.0)
+    asyncio.create_task(try_connect_loop())
+
 # Pydantic İstek Modelleri
 class ConnectRequest(BaseModel):
     port: str

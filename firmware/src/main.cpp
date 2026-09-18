@@ -11,6 +11,9 @@
 
 // Octopus Pro V1.0.1 (STM32F446ZET6) - 12 MHz Harici Kristal (HSE) ve 48 MHz USB Clock Yapılandırması
 extern "C" void SystemClock_Config(void) {
+    // 32KiB Bootloader sonrası Vector Table adresini 0x08008000'e sabitle
+    SCB->VTOR = 0x08008000;
+
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
     RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
     RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
@@ -19,22 +22,23 @@ extern "C" void SystemClock_Config(void) {
     __HAL_RCC_PWR_CLK_ENABLE();
     __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-    // 2. 12 MHz HSE Kristali ve Ana PLL Başlatma (M=6, N=360, P=4 -> 180 MHz SYSCLK, Q=15 -> 48 MHz USB)
+    // 2. 12 MHz HSE Kristali ve Ana PLL:
+    // HSE = 12 MHz
+    // PLLM = 6   -> VCO IN = 12 / 6 = 2.0 MHz (Önerilen çalışma aralığı: 1 - 2 MHz)
+    // PLLN = 168 -> VCO OUT = 2.0 * 168 = 336.0 MHz (Donanım limit aralığı: 100 - 432 MHz)
+    // PLLP = DIV2 -> SYSCLK = 336 / 2 = 168 MHz
+    // PLLQ = 7   -> USB OTG FS = 336 / 7 = 48.0 MHz (Doğrudan ve kesin 48 MHz USB saati)
+    // PLLR = 2   -> 168 MHz
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
     RCC_OscInitStruct.HSEState = RCC_HSE_ON;
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
     RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
     RCC_OscInitStruct.PLL.PLLM = 6;
-    RCC_OscInitStruct.PLL.PLLN = 360;
-    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV4; // 180 MHz
-    RCC_OscInitStruct.PLL.PLLQ = 15;            // 48 MHz (USB OTG FS)
+    RCC_OscInitStruct.PLL.PLLN = 168;
+    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+    RCC_OscInitStruct.PLL.PLLQ = 7;
     RCC_OscInitStruct.PLL.PLLR = 2;
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
-        while (1);
-    }
-
-    // 180 MHz için Over-Drive Modunu Etkinleştir
-    if (HAL_PWREx_EnableOverDrive() != HAL_OK) {
         while (1);
     }
 
@@ -42,9 +46,9 @@ extern "C" void SystemClock_Config(void) {
     RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
                                 | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
     RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;  // 180 MHz
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;   // 45 MHz (Max 45 MHz)
-    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;   // 90 MHz (Max 90 MHz)
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;  // 168 MHz
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;   // 42 MHz (Max 45 MHz)
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;   // 84 MHz (Max 90 MHz)
 
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK) {
         while (1);
