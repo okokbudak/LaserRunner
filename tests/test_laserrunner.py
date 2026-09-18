@@ -104,5 +104,26 @@ class TestLaserRunner(unittest.TestCase):
         self.assertEqual(moves[0]["type"], "RAPID")
         self.assertEqual(moves[1]["type"], "FRAME")
 
+    def test_aux_output_and_sensors(self):
+        # 1. Aux Çıkış Paketi Kodlama (Air assist ON)
+        frame = self.codec.encode_set_aux_output(1, 1)
+        self.assertEqual(frame[4], 0x08) # CMD_SET_AUX_OUTPUT
+        self.assertEqual(frame[5], 1)    # AUX_AIR_ASSIST
+        self.assertEqual(frame[6], 0)
+        self.assertEqual(frame[7], 1)
+
+        # 2. Genişletilmiş Durum Paketi Çözümleme (Sıcaklık 38.5°C, Kapak Açık, Alev Yok)
+        import struct
+        status_payload = struct.pack(
+            "<IiiiHBBhBB",
+            1000, 0, 0, 0, 0, 32, 0, 385, 0x01, 0x03
+        )
+        decoded = self.codec.decode_packet(0x82, status_payload)
+        self.assertEqual(decoded["type"], "STATUS")
+        self.assertEqual(decoded["diode_temp_c"], 38.5)
+        self.assertTrue(decoded["lid_open"])
+        self.assertFalse(decoded["flame_alert"])
+        self.assertEqual(decoded["endstops"], 0x03)
+
 if __name__ == "__main__":
     unittest.main()

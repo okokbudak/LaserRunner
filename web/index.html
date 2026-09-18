@@ -41,6 +41,22 @@
                 <span class="status-text" id="statusText">ÇEVRİMDIŞI</span>
             </div>
 
+            <!-- Canlı Sensör ve Güvenlik Göstergeleri -->
+            <div class="header-sensors">
+                <div class="sensor-pill" id="pillTemp" title="Lazer Diyot Sıcaklığı">
+                    <span class="sensor-icon">🌡️</span>
+                    <span id="hdrTemp" class="sensor-val">25.0°C</span>
+                </div>
+                <div class="sensor-pill" id="pillLid" title="Kabin Kapağı Güvenlik Durumu">
+                    <span class="sensor-icon" id="iconLid">🔒</span>
+                    <span id="hdrLid" class="sensor-val">KAPALI</span>
+                </div>
+                <div class="sensor-pill danger-pill" id="pillFlame" style="display:none;" title="Yangın Dedektörü">
+                    <span class="sensor-icon">🔥</span>
+                    <span class="sensor-val">ALEV!</span>
+                </div>
+            </div>
+
             <!-- Canlı Koordinat Hızlı Göstergesi -->
             <div class="header-coords">
                 <div class="coord-pill"><span class="axis-label">X</span><span id="hdrPosX" class="axis-val">0.00</span></div>
@@ -193,6 +209,46 @@
                                 </div>
                                 <input type="range" id="testPowerSlider" min="0.1" max="10.0" step="0.1" value="1.0">
                                 <button id="btnLaserTestToggle" class="btn-test-laser">Lazer Işığını Aç</button>
+                            </div>
+                        </div>
+
+                        <!-- Çevre Birimleri & Eklentiler (Addons) -->
+                        <div class="control-card">
+                            <h3>Çevre Birimleri & Eklentiler</h3>
+                            <div class="addon-grid">
+                                <!-- Air Assist -->
+                                <div class="addon-tile">
+                                    <div class="addon-tile-header">
+                                        <span class="addon-icon">💨</span>
+                                        <strong>Hava Motoru (Air Assist)</strong>
+                                    </div>
+                                    <button id="btnAirAssistToggle" class="btn-addon">AÇIK / KAPALI</button>
+                                </div>
+
+                                <!-- 3.3V Kılavuz Lazer / Kırmızı Nokta -->
+                                <div class="addon-tile">
+                                    <div class="addon-tile-header">
+                                        <span class="addon-icon">🔴</span>
+                                        <strong>3.3V Kılavuz Lazer</strong>
+                                    </div>
+                                    <button id="btnRedPointerToggle" class="btn-addon">AÇIK / KAPALI</button>
+                                </div>
+
+                                <!-- Duman Tahliye Fanı -->
+                                <div class="addon-tile full-tile">
+                                    <div class="slider-header">
+                                        <span>Duman Tahliye Fanı:</span>
+                                        <span id="exhaustFanVal">%0</span>
+                                    </div>
+                                    <input type="range" id="exhaustFanSlider" min="0" max="255" value="0">
+                                </div>
+
+                                <!-- Dual-Y Auto-Squaring Homing -->
+                                <div class="addon-tile full-tile">
+                                    <button id="btnAutoSquareHome" class="btn-action full-width" style="background:#2c3345; color:var(--accent-cyan); border:1px solid var(--accent-cyan);">
+                                        📐 DUAL-Y AUTO-SQUARING İLE GÖNYELE
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

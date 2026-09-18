@@ -1,61 +1,55 @@
-# BTT Octopus Pro V1.0.1 (STM32F446ZET6) Pin Haritası
+# BTT Octopus Pro V1.0.1 (STM32F446ZET6) Kapsamlı Donanım ve Eklenti (Addon) Pin Haritası
 
-Bu doküman, LaserRunner Firmware'i için BigTreeTech Octopus Pro V1.0.1 kartının pin atamalarını tanımlar.
+Bu doküman, LaserRunner Firmware'i için BigTreeTech Octopus Pro V1.0.1 kartının tüm motor, lazer, fan, hava motoru, sensör ve güvenlik eklentilerinin pin atamalarını tanımlar.
 
 ---
 
-## 1. Lazer ve Güvenlik Pinleri
+## 1. Lazer Modülleri ve Kılavuz İşaretleyiciler
 
 | Fonksiyon | Pin Adı | STM32 Pini | Donanım Özelliği | Açıklama |
 | :--- | :--- | :--- | :--- | :--- |
-| **Lazer PWM (Sinyal)** | **PROBE / SERVO** | **`PB0`** | **TIM3_CH3 (Donanımsal PWM)** | 3.3V TTL Lojik Sinyal (0 - 100% duty cycle, 1 - 20 kHz) |
-| **Lazer Besleme (VCC)** | PSU Harici Klemens | - | 12V / 24V DC | Güç kaynağından doğrudan (ortak GND ile) |
-| **Lazer Şase (GND)** | Kart Şasesi | GND | Ortak Şase | PSU ve Kart GND ortaklanmalıdır |
-| **Acil Durdurma Butonu** | PWR_DET / ESTOP | `PC0` | Dahili Pull-up, Kesme (EXTI) | Basıldığında anında PWM sıfırlanır |
+| **Ana Lazer PWM (Sinyal)** | **PROBE / SERVO** | **`PB0`** | **TIM3_CH3 (Donanımsal PWM)** | 3.3V / 5V TTL Lojik Sinyal (0 - 100% duty, 1 - 20 kHz) |
+| **Kılavuz Lazer / Kırmızı Nokta (Red Dot / Crosshair)** | **RGB / NEOPIXEL** | **`PB10`** | 3.3V Lojik PWM / Dijital | 3.3V Kılavuz işaretleyici / Çerçeveleme lazeri |
+| **İkinci Lazer PWM (Çift Kafa / Fiber / UV)** | **EXP1_PIN7** | **`PE8`** | Donanımsal PWM | Opsiyonel 2. Lazer kafası TTL girişi |
+| **Lazer Besleme (VCC)** | Harici Klemens | - | 12V / 24V DC | Güç kaynağından doğrudan (Ortak GND ile) |
 
 ---
 
-## 2. Step Motor Sürücü Pinleri (Motor 1 - Motor 4)
+## 2. Hava Motoru, Duman Tahliyesi ve MOSFET Çıkışları
 
-LaserRunner varsayılan olarak şu motor slotlarını kullanır:
-* **Motor 1 (Eksen X):**
-  * STEP: `PF13`
-  * DIR: `PF12`
-  * ENABLE: `PF14`
-  * UART / CS: `PC4`
-* **Motor 2 (Eksen Y1 - Birincil Y):**
-  * STEP: `PG0`
-  * DIR: `PG1`
-  * ENABLE: `PF15`
-  * UART / CS: `PD11`
-* **Motor 3 (Eksen Y2 - İkincil Y / Çift Y veya Z ekseni):**
-  * STEP: `PF11`
-  * DIR: `PG3`
-  * ENABLE: `PG5`
-  * UART / CS: `PC6`
-* **Motor 4 (Eksen Z veya AWD CoreXY İkincil Motorlar):**
-  * STEP: `PG4`
-  * DIR: `PC1`
-  * ENABLE: `PA0`
-  * UART / CS: `PC7`
+Octopus Pro üzerinde voltajı jumper ile 5V / 12V / 24V seçilebilen 6 adet kontrollü fan çıkışı ve yüksek güçlü MOSFET'ler bulunur:
+
+| Fonksiyon | Kart Etiketi | STM32 Pini | Çıkış Tipi | Açıklama |
+| :--- | :--- | :--- | :--- | :--- |
+| **Air Assist (Hava Pompası / Solenoid Valf)** | **FAN0** | **`PA8`** | Kontrollü MOSFET | `M7`/`M8` ile açılır, `M9` ile kapanır (Kesim sırasında üfleme) |
+| **Duman Tahliye Emiş Fanı (Exhaust Fan)** | **FAN1** | **`PE5`** | Kontrollü MOSFET | İş başlangıcında açılır, iş bitiminden 30s sonra otomatik kapanır |
+| **Lazer Kafa Soğutma Fanı** | **FAN2** | **`PD12`** | Kontrollü PWM | Lazer diyot gövdesini soğutan fan |
+| **Elektronik Kutu Fanı** | **FAN3** | **`PD13`** | Kontrollü PWM | Octopus Pro ve step sürücüleri soğutan fan |
+| **Yüksek Güçlü Hava Kompresör Rölesi** | **HE1 / BED_OUT** | **`PA3` / `PA1`** | Yüksek Akım MOSFET | 12V/24V büyük kompresör veya harici AC röle tetikleme |
 
 ---
 
-## 3. Limit Anahtarları (Endstops)
+## 3. Step Motor Sürücüleri (TMC2209 / TMC5160 UART / SPI)
 
-| Eksen | Pin Etiketi | STM32 Pini | Mod |
-| :--- | :--- | :--- | :--- |
-| **X Min** | DIAG0 / STOP0 | `PG6` | Giriş (Pull-up / Sensörsüz homing için) |
-| **Y1 Min** | DIAG1 / STOP1 | `PG9` | Giriş (Pull-up / Sensörsüz homing için) |
-| **Y2 Min** | DIAG2 / STOP2 | `PG10` | Bağımsız Auto-Squaring Hizalama Girişi |
-| **Z Min** | DIAG3 / STOP3 | `PG11` | Z Eksen Probu / Limit |
+Octopus Pro üzerindeki 8 adet sürücü yuvası:
+
+| Eksen / Slot | STEP | DIR | ENABLE | UART / CS Pini | Sensörsüz Homing (DIAG) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Motor 1: X Ekseni** | `PF13` | `PF12` | `PF14` | `PC4` | `PG6` (DIAG0) |
+| **Motor 2: Y1 Ekseni (Sol Motor)** | `PG0` | `PG1` | `PF15` | `PD11` | `PG9` (DIAG1) |
+| **Motor 3: Y2 Ekseni (Sağ Motor - Auto Squaring)** | `PF11` | `PG3` | `PG5` | `PC6` | `PG10` (DIAG2) |
+| **Motor 4: Z Ekseni (Yatak Yüksekliği / Odak)** | `PG4` | `PC1` | `PA0` | `PC7` | `PG11` (DIAG3) |
+| **Motor 5: Rotary Ekseni (Döner Rulo / Bardak Aparatı)** | `PF9` | `PF10` | `PG2` | `PF2` | `PG12` (DIAG4) |
+| **Motor 6: AWD CoreXY İkincil A Motoru** | `PC13` | `PF0` | `PF1` | `PE4` | `PG13` (DIAG5) |
+| **Motor 7: AWD CoreXY İkincil B Motoru** | `PE2` | `PE3` | `PD4` | `PE1` | `PG14` (DIAG6) |
 
 ---
 
-## 4. İletişim Portu (Raspberry Pi Bağlantısı)
+## 4. Güvenlik, Sensörler ve Koruma Girişleri
 
-* **Yerel USB Portu (USB-C Girişi):**
-  * PA11: `USB_DM`
-  * PA12: `USB_DP`
-  * Raspberry Pi 4B'nin herhangi bir USB 3.0 veya USB 2.0 portuna doğrudan USB kablosuyla bağlanır.
-  * Kart `Virtual COM Port` (CDC-ACM) olarak tanınır (12 Mbps Full Speed).
+| Sensör / Fonksiyon | Kart Etiketi | STM32 Pini | Mod | Güvenlik Davranışı |
+| :--- | :--- | :--- | :--- | :--- |
+| **Kapak Güvenlik Anahtarı (Lid Safety Interlock)** | **STOP_Z+ / DIAG3** | **`PG11`** | Input (Pull-up) | Kapak açıldığında **Lazer anında kapanır**, hareket duraklar! |
+| **Alev / Yangın Sensörü (Flame Detector)** | **PWR_DET** | **`PC0`** | Input (Pull-up) | Alev algılandığında **ACİL DURDURMA** tetiklenir, alarm çalar! |
+| **Lazer Kafa Sıcaklık Sensörü (NTC100K)** | **TB / T0** | **`PF3`** | Analog ADC (ADC3_IN9) | Lazer sıcaklığı > 50°C olursa güç kısılır / durdurulur |
+| **Su Akış Sensörü (Water Flow / Chiller OK)** | **DIAG7 / STOP7** | **`PG15`** | Input (Pull-up) | Su soğutmalı lazerlerde akış kesilirse lazer durdurulur |

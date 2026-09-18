@@ -54,6 +54,15 @@ class ConfigRequest(BaseModel):
     steps_per_mm_z: float = 400.0
     acceleration: float = 3000.0
 
+class AuxToggleRequest(BaseModel):
+    active: bool
+
+class ExhaustFanRequest(BaseModel):
+    duty: int # 0 - 255
+
+class HomingRequest(BaseModel):
+    axis_mask: int = 0x03 # bit 0: X, bit 1: Dual-Y, bit 2: Z
+
 # ==========================================
 # REST API UÇ NOKTALARI
 # ==========================================
@@ -71,7 +80,13 @@ def get_status():
         "pos_z": round(controller.pos_z, 2),
         "progress": round(controller.job_progress, 1),
         "free_slots": controller.transport.free_slots,
-        "kinematics": controller.kinematics_type
+        "kinematics": controller.kinematics_type,
+        "diode_temp": controller.diode_temperature,
+        "lid_open": controller.lid_open,
+        "flame_alert": controller.flame_alert,
+        "air_assist": controller.air_assist_active,
+        "red_pointer": controller.red_pointer_active,
+        "exhaust_fan": controller.exhaust_fan_duty
     }
 
 @app.post("/api/connect")
@@ -91,10 +106,30 @@ def jog_machine(req: JogRequest):
     controller.jog(dx=req.dx, dy=req.dy, dz=req.dz, speed_mm_s=req.speed)
     return {"status": "ok"}
 
+@app.post("/api/home")
+def home_machine(req: HomingRequest):
+    controller.start_homing(req.axis_mask)
+    return {"status": "homing_started"}
+
 @app.post("/api/laser/test")
 def test_laser(req: LaserPowerRequest):
     controller.set_manual_laser(req.power_percent)
     return {"status": "ok", "power": req.power_percent}
+
+@app.post("/api/aux/air_assist")
+def toggle_air_assist(req: AuxToggleRequest):
+    controller.set_air_assist(req.active)
+    return {"status": "ok", "air_assist": req.active}
+
+@app.post("/api/aux/exhaust_fan")
+def set_exhaust_fan(req: ExhaustFanRequest):
+    controller.set_exhaust_fan(req.duty)
+    return {"status": "ok", "duty": req.duty}
+
+@app.post("/api/aux/red_pointer")
+def toggle_red_pointer(req: AuxToggleRequest):
+    controller.set_red_pointer(req.active)
+    return {"status": "ok", "red_pointer": req.active}
 
 @app.post("/api/estop")
 def emergency_stop():
@@ -138,11 +173,17 @@ async def websocket_telemetry(websocket: WebSocket):
         while True:
             telemetry = {
                 "state": controller.state,
-                "x": controller.pos_x,
-                "y": controller.pos_y,
-                "z": controller.pos_z,
+                "x": round(controller.pos_x, 2),
+                "y": round(controller.pos_y, 2),
+                "z": round(controller.pos_z, 2),
                 "progress": controller.job_progress,
-                "slots": controller.transport.free_slots
+                "slots": controller.transport.free_slots,
+                "diode_temp": controller.diode_temperature,
+                "lid_open": controller.lid_open,
+                "flame_alert": controller.flame_alert,
+                "air_assist": controller.air_assist_active,
+                "red_pointer": controller.red_pointer_active,
+                "exhaust_fan": controller.exhaust_fan_duty
             }
             await websocket.send_json(telemetry)
             await asyncio.sleep(0.05) # 20 Hz canlı akış

@@ -675,3 +675,99 @@ input[type="range"] {
 .log-line.info { color: var(--text-muted); }
 .log-line.success { color: var(--accent-green); }
 .log-line.error { color: var(--accent-red); }
+
+/* ==========================================
+   CANLI SENSÖR VE GÜVENLİK GÖSTERGELERİ
+   ========================================== */
+.header-sensors {
+    display: flex;
+    gap: 8px;
+}
+
+.sensor-pill {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sensor-val {
+    font-weight: 600;
+}
+
+.danger-pill {
+    background: rgba(255, 42, 95, 0.2);
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+    animation: pulseDanger 1s infinite alternate;
+}
+
+@keyframes pulseDanger {
+    from { box-shadow: 0 0 5px rgba(255, 42, 95, 0.4); }
+    to { box-shadow: 0 0 15px rgba(255, 42, 95, 0.8); }
+}
+
+/* ==========================================
+   ÇEVRE BİRİMLERİ VE EKLENTİ TİLE'LARI
+   ========================================== */
+.addon-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.addon-tile {
+    background: #252b3a;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.addon-tile.full-tile {
+    grid-column: span 2;
+}
+
+.addon-tile-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.addon-icon {
+    font-size: 1rem;
+}
+
+.btn-addon {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--card-border);
+    color: var(--text-main);
+    padding: 6px 0;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-addon:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.btn-addon.active {
+    background: var(--accent-cyan);
+    color: #000;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+    border-color: var(--accent-cyan);
+}
+

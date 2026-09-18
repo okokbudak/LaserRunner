@@ -98,6 +98,50 @@ function updateTelemetry(data) {
         elQueue.textContent = `${data.slots} / 64`;
     }
 
+    // Sıcaklık Telemetrisi
+    if (data.diode_temp !== undefined) {
+        const hdrTemp = document.getElementById("hdrTemp");
+        hdrTemp.textContent = `${data.diode_temp.toFixed(1)}°C`;
+        const pillTemp = document.getElementById("pillTemp");
+        if (data.diode_temp > 50.0) {
+            pillTemp.className = "sensor-pill danger-pill";
+        } else {
+            pillTemp.className = "sensor-pill";
+        }
+    }
+
+    // Kapak Güvenlik Durumu
+    if (data.lid_open !== undefined) {
+        const hdrLid = document.getElementById("hdrLid");
+        const pillLid = document.getElementById("pillLid");
+        const iconLid = document.getElementById("iconLid");
+        if (data.lid_open) {
+            hdrLid.textContent = "AÇIK!";
+            pillLid.className = "sensor-pill danger-pill";
+            iconLid.textContent = "⚠️";
+        } else {
+            hdrLid.textContent = "KAPALI";
+            pillLid.className = "sensor-pill";
+            iconLid.textContent = "🔒";
+        }
+    }
+
+    // Alev Alarmı
+    if (data.flame_alert !== undefined) {
+        const pillFlame = document.getElementById("pillFlame");
+        pillFlame.style.display = data.flame_alert ? "flex" : "none";
+    }
+
+    // Eklenti Durumları
+    if (data.air_assist !== undefined) {
+        const btnAir = document.getElementById("btnAirAssistToggle");
+        if (btnAir) btnAir.classList.toggle("active", data.air_assist);
+    }
+    if (data.red_pointer !== undefined) {
+        const btnRed = document.getElementById("btnRedPointerToggle");
+        if (btnRed) btnRed.classList.toggle("active", data.red_pointer);
+    }
+
     renderCanvas();
 }
 
@@ -362,4 +406,64 @@ function setupEventListeners() {
         renderCanvas();
         log("Çalışma alanı temizlendi.");
     });
+
+    // Air Assist (Hava Motoru) Aç/Kapat
+    const btnAir = document.getElementById("btnAirAssistToggle");
+    if (btnAir) {
+        btnAir.addEventListener("click", async () => {
+            const active = !btnAir.classList.contains("active");
+            btnAir.classList.toggle("active", active);
+            await fetch("/api/aux/air_assist", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ active })
+            });
+            log(`Hava Motoru: ${active ? "AÇIK" : "KAPALI"}`);
+        });
+    }
+
+    // 3.3V Kılavuz Lazer / Kırmızı Nokta Aç/Kapat
+    const btnRed = document.getElementById("btnRedPointerToggle");
+    if (btnRed) {
+        btnRed.addEventListener("click", async () => {
+            const active = !btnRed.classList.contains("active");
+            btnRed.classList.toggle("active", active);
+            await fetch("/api/aux/red_pointer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ active })
+            });
+            log(`3.3V Kılavuz Lazer: ${active ? "AÇIK" : "KAPALI"}`);
+        });
+    }
+
+    // Duman Tahliye Fanı Hızı
+    const exSlider = document.getElementById("exhaustFanSlider");
+    const exVal = document.getElementById("exhaustFanVal");
+    if (exSlider && exVal) {
+        exSlider.addEventListener("input", async (e) => {
+            const duty = parseInt(e.target.value);
+            const pct = Math.round((duty / 255) * 100);
+            exVal.textContent = `%${pct}`;
+            await fetch("/api/aux/exhaust_fan", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ duty })
+            });
+        });
+    }
+
+    // Dual-Y Auto-Squaring Homing
+    const btnAutoSquare = document.getElementById("btnAutoSquareHome");
+    if (btnAutoSquare) {
+        btnAutoSquare.addEventListener("click", async () => {
+            log("Dual-Y Auto-Squaring başlatılıyor (Gönyeleme)...", "info");
+            await fetch("/api/home", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ axis_mask: 3 }) // X ve Dual-Y
+            });
+            log("Auto-Squaring tamamlandı, köprü 90° hizalandı!", "success");
+        });
+    }
 }

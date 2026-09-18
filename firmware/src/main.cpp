@@ -4,6 +4,9 @@
 #include "laser_pwm.h"
 #include "step_queue.h"
 #include "step_timer.h"
+#include "aux_io.h"
+#include "sensors.h"
+#include "homing.h"
 
 // Paket Ayrıştırma Durum Makinesi
 enum ParseState {
@@ -72,6 +75,7 @@ void send_error(uint8_t error_code, uint8_t detail) {
 void trigger_emergency_stop() {
     estop_triggered = true;
     LaserController::emergencyKill();
+    AuxIOManager::emergencyKill();
     StepTimer::stop();
     StepTimer::disableAllMotors();
     StepQueue::clear();
@@ -106,10 +110,34 @@ void dispatch_command(uint8_t opcode, const uint8_t* payload, uint8_t len, uint8
 
         case CMD_SET_LASER_POWER: {
             if (len >= 2) {
+                // Güvenlik kapağı açıkken ateşleme engeli
+                if (SafetySensors::isLidOpen()) {
+                    send_error(ERR_LID_OPEN, 0);
+                    return;
+                }
                 uint16_t pwr = (payload[0] << 8) | payload[1];
                 LaserController::setPower(pwr);
                 send_ack(seq_id);
             }
+            break;
+        }
+
+        case CMD_SET_AUX_OUTPUT: {
+            if (len >= 3) {
+                uint8_t dev_id = payload[0];
+                uint16_t val = (payload[1] << 8) | payload[2];
+                AuxIOManager::setDevice(dev_id, val);
+                send_ack(seq_id);
+            }
+            break;
+        }
+
+        case CMD_START_HOMING:
+        case CMD_HOME_AXIS: {
+            uint8_t axis_mask = (len >= 1) ? payload[0] : 0x03; // Varsayılan X ve Y
+            LaserController::setPower(0);
+            HomingManager::runHoming(axis_mask);
+            send_ack(seq_id);
             break;
         }
 
@@ -120,12 +148,17 @@ void dispatch_command(uint8_t opcode, const uint8_t* payload, uint8_t len, uint8
                     return;
                 }
 
+                // Kapak açıksa lazeri kilitle
+                if (SafetySensors::isLidOpen()) {
+                    send_error(ERR_LID_OPEN, 0);
+                    return;
+                }
+
                 MotionBlockPayload block;
                 memcpy(&block, payload, sizeof(MotionBlockPayload));
 
                 if (StepQueue::push(block)) {
                     send_ack(seq_id);
-                    // Eğer motorlar durmuşsa başlat
                     if (!StepTimer::isBusy()) {
                         StepTimer::start();
                     }
@@ -144,9 +177,20 @@ void dispatch_command(uint8_t opcode, const uint8_t* payload, uint8_t len, uint8
             status.pos_z = StepTimer::current_pos_z;
             status.current_laser_pwm = LaserController::getCurrentPower();
             status.queue_free_slots = StepQueue::freeSlots();
+            
             status.system_flags = 0;
             if (StepTimer::isBusy()) status.system_flags |= 0x02;
             if (estop_triggered) status.system_flags |= 0x04;
+
+            status.diode_temp_c_x10 = (int16_t)(SafetySensors::getDiodeTemperature() * 10.0f);
+            
+            status.sensor_flags = 0;
+            if (SafetySensors::isLidOpen()) status.sensor_flags |= 0x01;
+            if (SafetySensors::isFlameDetected()) status.sensor_flags |= 0x02;
+            if (AuxIOManager::isAirAssistActive()) status.sensor_flags |= 0x04;
+            if (AuxIOManager::isRedPointerActive()) status.sensor_flags |= 0x08;
+
+            status.endstop_states = SafetySensors::getEndstopStates();
 
             send_response(RESP_STATUS, (const uint8_t*)&status, sizeof(StatusPayload));
             break;
@@ -165,26 +209,44 @@ void setup() {
     pinMode(PIN_LED_STATUS, OUTPUT);
     digitalWrite(PIN_LED_STATUS, LOW);
 
-    pinMode(PIN_ESTOP, INPUT_PULLUP);
-
-    // Yerel USB-CDC başlatma
+    // Yerel USB-CDC başlatma (12 Mbps)
     Serial.begin(115200);
 
     // Alt sistemleri başlat
     LaserController::init();
+    AuxIOManager::init();
+    SafetySensors::init();
     StepQueue::init();
     StepTimer::init();
+    HomingManager::init();
 
     last_packet_time_ms = millis();
 }
 
 void loop() {
-    // 1. Acil Durdurma Pini Kontrolü
-    if (digitalRead(PIN_ESTOP) == LOW && !estop_triggered) {
+    // 1. Güvenlik Sensörlerini Oku
+    SafetySensors::update();
+
+    // Alev algılandıysa anında acil durdurma
+    if (SafetySensors::isFlameDetected() && !estop_triggered) {
         trigger_emergency_stop();
     }
 
-    // 2. Güvenlik Watchdog Kontrolü (Host ile iletişim koptuysa lazeri derhal kapat)
+    // Kapak açıldıysa lazeri hemen kapat
+    if (SafetySensors::isLidOpen()) {
+        if (LaserController::getCurrentPower() > 0) {
+            LaserController::setPower(0);
+        }
+    }
+
+    // Lazer aşırı ısındıysa korumaya al
+    if (SafetySensors::getDiodeTemperature() > MAX_DIODE_TEMP_C) {
+        if (LaserController::getCurrentPower() > 0) {
+            LaserController::setPower(0);
+        }
+    }
+
+    // 2. Güvenlik Watchdog Kontrolü
     if (millis() - last_packet_time_ms > WATCHDOG_TIMEOUT_MS) {
         if (LaserController::getCurrentPower() > 0) {
             LaserController::setPower(0);
@@ -195,7 +257,7 @@ void loop() {
     while (Serial.available()) {
         uint8_t byte_in = Serial.read();
 
-        // Acil Durdurma Out-of-band Byte kontrolü
+        // Anlık Out-of-band Acil Durdurma Byte
         if (byte_in == PROTOCOL_URGENT_ESTOP) {
             trigger_emergency_stop();
             continue;
@@ -217,7 +279,7 @@ void loop() {
             case READ_LEN:
                 rx_len = byte_in;
                 if (rx_len > sizeof(rx_payload)) {
-                    parse_state = WAIT_SYNC1; // Hatalı uzunluk
+                    parse_state = WAIT_SYNC1;
                 } else {
                     parse_state = READ_SEQ;
                 }
