@@ -155,5 +155,57 @@ class TestLaserRunner(unittest.TestCase):
         self.assertEqual(frame[5], 0)    # motor_id 0
         self.assertEqual(frame[6], 0)    # mode SpreadCycle
 
+    def test_rotation_distance(self):
+        from laserrunner.core.config_manager import ConfigManager
+        cfg = ConfigManager()
+        spm = cfg.get_steps_per_mm()
+        # rotation_distance: 40, full_steps: 200, microsteps: 16 -> (200 * 16) / 40 = 80.0
+        self.assertEqual(spm["x"], 80.0)
+        self.assertEqual(spm["y"], 80.0)
+        # Z: rotation_distance: 8, (200 * 16) / 8 = 400.0
+        self.assertEqual(spm["z"], 400.0)
+
+    def test_input_shaper(self):
+        from laserrunner.planner.input_shaper import InputShaper
+        shaper = InputShaper({"shaper_type_x": "mzv", "shaper_freq_x": 50.0, "damping_ratio_x": 0.1})
+        pulses = shaper.pulses_x
+        self.assertEqual(len(pulses), 3) # MZV 3 darbeli
+        total_amp = sum(p[0] for p in pulses)
+        self.assertAlmostEqual(total_amp, 1.0, places=4)
+        self.assertTrue(shaper.get_shaping_delay("x") > 0)
+
+    def test_macro_engine(self):
+        from laserrunner.planner.macro_engine import MacroEngine
+        me = MacroEngine()
+        me.register_macro("TEST_CUT", "M7\nM3 S{params.POWER|default(1000)}\nG4 P{params.WAIT|default(200)}")
+        
+        # 1. Varsayılan parametrelerle çalıştırma
+        lines = me.execute_macro("TEST_CUT")
+        self.assertEqual(lines[0], "M7")
+        self.assertEqual(lines[1], "M3 S1000")
+        self.assertEqual(lines[2], "G4 P200")
+
+        # 2. Özel parametrelerle çalıştırma
+        lines_custom = me.execute_macro("TEST_CUT", {"POWER": 2500, "WAIT": 500})
+        self.assertEqual(lines_custom[1], "M3 S2500")
+        self.assertEqual(lines_custom[2], "G4 P500")
+
+    def test_verification_manager(self):
+        from laserrunner.core.verification import VerificationManager
+        from laserrunner.core.config_manager import ConfigManager
+        cfg = ConfigManager()
+        vm = VerificationManager(controller=None, config_manager=cfg)
+        
+        # Endstop testi
+        endstops = vm.query_endstops()
+        self.assertIn("x", endstops)
+        self.assertIn("lid", endstops)
+
+        # TMC dökümü
+        tmc_dump = vm.dump_tmc("stepper_x")
+        self.assertTrue(tmc_dump["success"])
+        self.assertEqual(tmc_dump["mode"], "SPREADCYCLE")
+        self.assertEqual(tmc_dump["run_current_ma"], 800)
+
 if __name__ == "__main__":
     unittest.main()

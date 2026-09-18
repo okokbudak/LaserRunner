@@ -164,6 +164,81 @@ def update_config(req: ConfigRequest):
     return {"status": "config_updated"}
 
 # ==========================================
+# MAKROLAR & KLIPPER KOMUTLARI
+# ==========================================
+class MacroExecuteRequest(BaseModel):
+    macro: str
+    params: Optional[Dict[str, Any]] = None
+
+@app.get("/api/macros")
+def list_macros():
+    return {
+        "macros": controller.macro_engine.macros
+    }
+
+@app.post("/api/macros/execute")
+def execute_macro(req: MacroExecuteRequest):
+    try:
+        lines = controller.macro_engine.execute_macro(req.macro, req.params)
+        return {"status": "ok", "macro": req.macro, "executed_lines": lines}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# ==========================================
+# DONANIM DOĞRULAMA & TANILAMA (VERIFICATIONS)
+# ==========================================
+class StepperBuzzRequest(BaseModel):
+    stepper: str
+    distance: float = 1.0
+
+class EnableSteppersRequest(BaseModel):
+    enable: bool = True
+
+@app.get("/api/verify/endstops")
+def query_endstops():
+    states = controller.verification.query_endstops()
+    return {"status": "ok", "endstops": states}
+
+@app.post("/api/verify/stepper_buzz")
+def stepper_buzz(req: StepperBuzzRequest):
+    result = controller.verification.stepper_buzz(req.stepper, req.distance)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("message"))
+    return result
+
+@app.get("/api/verify/dump_tmc")
+def dump_tmc(stepper: str = "stepper_x"):
+    result = controller.verification.dump_tmc(stepper)
+    if not result.get("success"):
+        raise HTTPException(status_code=404, detail=result.get("message"))
+    return result
+
+@app.post("/api/verify/enable_steppers")
+def verify_steppers(req: EnableSteppersRequest):
+    return controller.verification.verify_stepper_enable(req.enable)
+
+@app.get("/api/input_shaper")
+def get_input_shaper_status():
+    shaper = controller.input_shaper
+    return {
+        "enabled": shaper.enabled,
+        "x": {
+            "type": shaper.type_x,
+            "freq": shaper.freq_x,
+            "damping": shaper.damping_x,
+            "delay_sec": shaper.get_shaping_delay("x"),
+            "pulses": shaper.pulses_x
+        },
+        "y": {
+            "type": shaper.type_y,
+            "freq": shaper.freq_y,
+            "damping": shaper.damping_y,
+            "delay_sec": shaper.get_shaping_delay("y"),
+            "pulses": shaper.pulses_y
+        }
+    }
+
+# ==========================================
 # CANLI TELEMETRİ WEBSOCKET
 # ==========================================
 @app.websocket("/ws")

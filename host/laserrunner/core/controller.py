@@ -8,6 +8,11 @@ from ..kinematics.corexy import CoreXYKinematics
 from ..kinematics.awd_corexy import AWDCoreXYKinematics
 from ..planner.trajectory import TrajectoryPlanner
 from ..planner.step_generator import StepGenerator
+from ..planner.macro_engine import MacroEngine
+from ..planner.homing_sequence import HomingSequenceManager
+from ..planner.input_shaper import InputShaper
+from .verification import VerificationManager
+from .config_manager import ConfigManager
 from ..protocol.codec import (
     AUX_AIR_ASSIST,
     AUX_EXHAUST_FAN,
@@ -30,7 +35,8 @@ class LaserRunnerController:
     """
     LaserRunner Merkezi Kontrol Motoru.
     Gelişmiş eklentiler (Air assist, duman fanı, 3.3V kılavuz lazer,
-    güvenlik sensörleri ve Dual-Y Auto-Squaring homing) tam entegredir.
+    güvenlik sensörleri, Dual-Y Auto-Squaring homing, Klipper makroları,
+    Rezonans telafi / Input Shaping ve donanım doğrulamaları) tam entegredir.
     """
     def __init__(
         self,
@@ -39,14 +45,27 @@ class LaserRunnerController:
         acceleration: float = 3000.0,
         port: str = "COM3"
     ):
+        self.config_manager = ConfigManager()
+        
+        # rotation_distance veya steps_per_mm yapılandırması
         if steps_per_mm is None:
-            steps_per_mm = {"x": 80.0, "y": 80.0, "z": 400.0, "xy": 80.0}
+            steps_per_mm = self.config_manager.get_steps_per_mm()
 
         self.kinematics_type = kinematics_type
         self.kinematics = self._build_kinematics(kinematics_type, steps_per_mm)
         self.planner = TrajectoryPlanner(acceleration_mm_s2=acceleration)
         self.step_generator = StepGenerator(self.kinematics)
         self.transport = SerialTransport(port=port)
+
+        # Klipper Uyumlu Alt Modüller
+        self.macro_engine = MacroEngine(self)
+        self.macro_engine.load_macros_from_config(self.config_manager.get_macros())
+        
+        self.homing_sequence = HomingSequenceManager(self, self.macro_engine)
+        self.homing_sequence.configure_override(self.config_manager.get_homing_override())
+
+        self.input_shaper = InputShaper(self.config_manager.get_input_shaper_config())
+        self.verification = VerificationManager(self, self.config_manager)
 
         self.state = MachineState.DISCONNECTED
         self.pos_x = 0.0
@@ -61,6 +80,7 @@ class LaserRunnerController:
         self.red_pointer_active = False
         self.exhaust_fan_duty = 0
         self.endstop_states = 0
+        self.endstops_mask = 0
 
         self.job_progress = 0.0
         self.is_aborting = False
@@ -137,13 +157,22 @@ class LaserRunnerController:
         frame = self.transport.codec.encode_set_aux_output(AUX_RED_POINTER, 1 if active else 0)
         self.transport.send_raw(frame)
 
-    def start_homing(self, axis_mask: int = 0x03):
+    def start_homing(self, axis_mask: int = 0x03, use_sequence: bool = True):
         """
-        Dual-Y Auto-Squaring Destekli Homing:
+        Dual-Y Auto-Squaring Destekli Homing veya [homing_override] Sekansı:
         axis_mask: bit 0: X, bit 1: Dual-Y, bit 2: Z
         """
         if self.state not in (MachineState.IDLE, MachineState.PAUSED):
             return
+
+        if use_sequence and hasattr(self, "homing_sequence") and self.homing_sequence.override_config:
+            axes = ""
+            if axis_mask & 0x01: axes += "x"
+            if axis_mask & 0x02: axes += "y"
+            if axis_mask & 0x04: axes += "z"
+            self.homing_sequence.execute_homing(axes or "xy")
+            return
+
         self.state = MachineState.HOMING
         frame = self.transport.codec.encode_start_homing(axis_mask)
         self.transport.send_raw(frame)
@@ -254,3 +283,4 @@ class LaserRunnerController:
             self.red_pointer_active = packet["red_pointer"]
         if "endstops" in packet:
             self.endstop_states = packet["endstops"]
+            self.endstops_mask = packet["endstops"]
