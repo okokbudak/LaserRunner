@@ -19,7 +19,7 @@ CLR_CYAN="\033[0;36m"
 CLR_WHITE="\033[1;37m"
 
 # Git ve Depo Ayarları
-DEFAULT_REPO_URL="https://github.com/Kokbudak/LaserRunner.git"
+DEFAULT_REPO_URL="https://github.com/okokbudak/LaserRunner.git"
 REPO_URL="${LASERRUNNER_REPO:-$DEFAULT_REPO_URL}"
 
 # Dizin ve Dosya Yolları

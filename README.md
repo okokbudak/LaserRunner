@@ -49,7 +49,7 @@ Sıfır bir Raspberry Pi 4B'ye SSH ile bağlandıktan sonra sistemi tek bir inte
 
 ```bash
 # 1. Depoyu klonlayın
-git clone https://github.com/Kokbudak/LaserRunner.git
+git clone https://github.com/okokbudak/LaserRunner.git
 cd LaserRunner
 
 # 2. Kurulum ve Yönetim Yardımcısını (LIAUH) çalıştırın
